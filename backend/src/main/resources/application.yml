@@ -1,0 +1,28 @@
+spring:
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/dairy_management}
+    username: ${SPRING_DATASOURCE_USERNAME:dairy_user}
+    password: ${SPRING_DATASOURCE_PASSWORD:dairy_password}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+
+server:
+  port: 8080
+
+jwt:
+  secret: ${JWT_SECRET:dairy-super-secret-jwt-key-change-in-production-min-32-chars}
+  expiration: ${JWT_EXPIRATION:86400000}
+
+fast2sms:
+  api-key: ${FAST2SMS_API_KEY:CHANGE_ME}
+
+logging:
+  level:
+    com.dairy: DEBUG

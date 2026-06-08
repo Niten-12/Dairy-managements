@@ -1,0 +1,106 @@
+import { useTranslation } from 'react-i18next'
+import { useAuth } from '../../context/AuthContext'
+import StatCard from '../../components/ui/StatCard'
+import EmptyState from '../../components/ui/EmptyState'
+
+function FarmerDashboard() {
+  const { user } = useAuth()
+  const { t } = useTranslation(['dashboard', 'common'])
+
+  const stats = [
+    { id: 'todays_collection', label: t('dashboard:stat_todays_collection'), value: '0 L', icon: '🥛', color: 'var(--color-emerald-600)', bg: 'var(--color-emerald-100)', delay: 0 },
+    { id: 'total_cattle',      label: t('dashboard:stat_total_cattle'),      value: '0',   icon: '🐄', color: 'var(--color-blue-600)',    bg: 'var(--color-blue-100)',    delay: 1 },
+    { id: 'pending_payments',  label: t('dashboard:stat_pending_payments'),  value: '₹0',  icon: '⏳', color: 'var(--color-red-600)',     bg: 'var(--color-red-100)',     delay: 2 },
+    { id: 'this_month',        label: t('dashboard:stat_this_month'),        value: '₹0',  icon: '💰', color: 'var(--color-amber-600)',   bg: 'var(--color-amber-100)',   delay: 3 },
+  ]
+
+  return (
+    <div style={{ maxWidth: '1400px' }}>
+      {/* ── Page header ─────────────────────────────── */}
+      <div
+        className="anim-fade-in-up"
+        style={{ marginBottom: 'var(--space-7)', animationFillMode: 'both' }}
+      >
+        <h1
+          style={{
+            margin: '0 0 var(--space-1)',
+            fontSize: 'var(--text-2xl)',
+            fontWeight: 'var(--font-bold)',
+            color: 'var(--color-text)',
+          }}
+        >
+          {t('dashboard:hello', { name: user?.name })}
+        </h1>
+        <p style={{ margin: 0, fontSize: 'var(--text-base)', color: 'var(--color-text-muted)' }}>
+          {t('dashboard:farmer_subtitle')}
+        </p>
+      </div>
+
+      {/* ── Stat cards ──────────────────────────────── */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+          gap: 'var(--space-4)',
+          marginBottom: 'var(--space-7)',
+        }}
+      >
+        {stats.map((s) => (
+          <StatCard key={s.id} label={s.label} value={s.value} icon={s.icon} color={s.color} bg={s.bg} delay={s.delay} />
+        ))}
+      </div>
+
+      {/* ── Recent collections ──────────────────────── */}
+      <div
+        className="anim-fade-in-up anim-delay-4"
+        style={{
+          background: 'var(--color-surface)',
+          borderRadius: 'var(--radius-lg)',
+          boxShadow: 'var(--shadow-card)',
+          overflow: 'hidden',
+          animationFillMode: 'both',
+        }}
+      >
+        <div
+          style={{
+            padding: 'var(--space-5) var(--space-6)',
+            borderBottom: '1px solid var(--color-border)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
+          <h2
+            style={{
+              margin: 0,
+              fontSize: 'var(--text-md)',
+              fontWeight: 'var(--font-semibold)',
+              color: 'var(--color-text)',
+            }}
+          >
+            {t('dashboard:recent_collections')}
+          </h2>
+          <span
+            style={{
+              fontSize: 'var(--text-xs)',
+              color: 'var(--color-text-muted)',
+              background: 'var(--color-slate-100)',
+              padding: '3px 8px',
+              borderRadius: 'var(--radius-full)',
+              fontWeight: 'var(--font-medium)',
+            }}
+          >
+            {t('dashboard:count_records')}
+          </span>
+        </div>
+        <EmptyState
+          icon="🥛"
+          title={t('dashboard:empty_collections_title')}
+          description={t('dashboard:empty_collections_desc')}
+        />
+      </div>
+    </div>
+  )
+}
+
+export default FarmerDashboard
