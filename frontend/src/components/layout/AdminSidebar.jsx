@@ -29,13 +29,15 @@ function AdminSidebar({ collapsed, mobileOpen, closeMobile, onToggleCollapse }) 
   /* navItems defined inside function body so t() is available for tooltips */
   const navItems = [
     { key: 'dashboard',     path: '/admin/dashboard',    icon: '📊' },
-    { key: 'users',         path: '/admin/users',         icon: '👥', soon: true },
+    { key: 'users',         path: '/admin/users',         icon: '👥' },
+    { key: 'products',      path: '/admin/products',      icon: '🥛' },
+    { key: 'orders',        path: '/admin/orders',        icon: '📦' },
     { key: 'farmers',       path: '/admin/farmers',       icon: '🐄', soon: true },
     { key: 'delivery_boys', path: '/admin/delivery',      icon: '🚚', soon: true },
-    { key: 'orders',        path: '/admin/orders',        icon: '📦', soon: true },
-    { key: 'collections',   path: '/admin/collections',   icon: '🥛', soon: true },
+    { key: 'collections',   path: '/admin/collections',   icon: '🧺', soon: true },
     { key: 'payments',      path: '/admin/payments',      icon: '💰', soon: true },
     { key: 'reports',       path: '/admin/reports',       icon: '📈', soon: true },
+    { key: 'audit_logs',    path: '/admin/audit-logs',    icon: '📋' },
     { key: 'settings',      path: '/admin/settings',      icon: '⚙️' },
   ]
 

@@ -27,8 +27,7 @@ public class User {
     private String name;
 
     @Email
-    @NotBlank
-    @Column(unique = true, nullable = false)
+    @Column(unique = true, nullable = true)
     private String email;
 
     @NotBlank
@@ -51,6 +50,12 @@ public class User {
 
     @Column(length = 64)
     private String twoFactorSecret;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean active = true;
+
+    private LocalDateTime lastLoginAt;
 
     @CreationTimestamp
     @Column(updatable = false)

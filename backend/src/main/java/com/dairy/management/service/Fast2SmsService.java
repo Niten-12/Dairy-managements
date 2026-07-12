@@ -23,10 +23,16 @@ public class Fast2SmsService implements SmsService {
     @Override
     public void sendOtp(String phone, String code) {
         try {
+            // Simple message — avoids content filter on Quick SMS route
+            String message = java.net.URLEncoder.encode(
+                    code + " is your verification code. Valid for 5 minutes.",
+                    java.nio.charset.StandardCharsets.UTF_8);
+
             String url = "https://www.fast2sms.com/dev/bulkV2"
                     + "?authorization=" + apiKey
-                    + "&variables_values=" + code
-                    + "&route=otp"
+                    + "&route=q"
+                    + "&message=" + message
+                    + "&language=english"
                     + "&numbers=" + phone;
 
             HttpRequest request = HttpRequest.newBuilder()

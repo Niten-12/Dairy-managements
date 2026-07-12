@@ -1,0 +1,1410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GPS Tracking + Geofencing — SEPIA Desktop App</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:'Inter',sans-serif;background:#040d10;color:#e2e8f0;overflow:hidden;height:100vh;width:100vw;}
+
+    .bg-grid{position:fixed;inset:0;z-index:0;background-image:linear-gradient(rgba(20,184,166,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(20,184,166,.04) 1px,transparent 1px);background-size:50px 50px;pointer-events:none;}
+    .orb{position:fixed;border-radius:50%;filter:blur(90px);opacity:.1;pointer-events:none;z-index:0;}
+    .orb-1{width:600px;height:600px;background:radial-gradient(circle,#14b8a6,transparent);top:-200px;right:-200px;animation:float 8s ease-in-out infinite;}
+    .orb-2{width:500px;height:500px;background:radial-gradient(circle,#6366f1,transparent);bottom:-150px;left:-150px;animation:float 10s ease-in-out infinite reverse;}
+    .orb-3{width:350px;height:350px;background:radial-gradient(circle,#f59e0b,transparent);top:50%;left:50%;transform:translate(-50%,-50%);animation:float 12s ease-in-out infinite;opacity:.05;}
+
+    #slide-container{position:relative;z-index:10;width:100vw;height:100vh;display:flex;align-items:center;justify-content:center;}
+    .slide{display:none;width:100%;height:100%;align-items:center;justify-content:center;padding:1.5rem 3.5rem;}
+    .slide.active{display:flex;animation:fadeIn .45s ease forwards;}
+
+    .glass{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);backdrop-filter:blur(20px);border-radius:20px;}
+    .glass-teal{background:rgba(20,184,166,.08);border:1px solid rgba(20,184,166,.22);backdrop-filter:blur(20px);border-radius:16px;}
+    .glass-sm{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);backdrop-filter:blur(12px);border-radius:12px;}
+
+    #progress-bar{position:fixed;top:0;left:0;height:3px;z-index:100;background:linear-gradient(90deg,#14b8a6,#6366f1,#f59e0b);transition:width .4s cubic-bezier(.4,0,.2,1);box-shadow:0 0 12px rgba(20,184,166,.8);}
+    #brand-tag{position:fixed;top:16px;left:20px;z-index:100;display:flex;align-items:center;gap:8px;}
+    #brand-tag .live-dot{width:7px;height:7px;border-radius:50%;background:#14b8a6;animation:pulse-dot 1.6s ease-in-out infinite;}
+    #brand-tag span{font-size:11px;color:rgba(255,255,255,.32);letter-spacing:.1em;font-weight:600;}
+    #slide-counter{position:fixed;top:16px;right:20px;z-index:100;font-family:'Space Grotesk',sans-serif;font-size:13px;color:rgba(255,255,255,.28);letter-spacing:.08em;}
+    #nav-dots{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);display:flex;gap:6px;z-index:100;}
+    .dot{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.15);cursor:pointer;transition:all .3s;}
+    .dot.active{width:22px;border-radius:4px;background:#14b8a6;box-shadow:0 0 8px rgba(20,184,166,.6);}
+    .nav-arrow{position:fixed;top:50%;transform:translateY(-50%);z-index:100;width:40px;height:40px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .3s;backdrop-filter:blur(10px);color:rgba(255,255,255,.45);}
+    .nav-arrow:hover{background:rgba(20,184,166,.2);border-color:rgba(20,184,166,.5);color:#14b8a6;transform:translateY(-50%) scale(1.1);}
+    #arrow-prev{left:14px;}
+    #arrow-next{right:14px;}
+    #key-hint{position:fixed;bottom:50px;right:18px;z-index:100;display:flex;flex-direction:column;align-items:flex-end;gap:3px;}
+    .key-badge{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:4px;padding:2px 7px;font-size:10px;color:rgba(255,255,255,.22);}
+
+    @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+    @keyframes fadeInUp{from{opacity:0;transform:translateY(26px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-14px)}}
+    @keyframes pulse-dot{0%,100%{opacity:1}50%{opacity:.35}}
+    @keyframes orbit{from{transform:rotate(0deg) translateX(75px) rotate(0deg)}to{transform:rotate(360deg) translateX(75px) rotate(-360deg)}}
+    @keyframes orbitB{from{transform:rotate(90deg) translateX(58px) rotate(-90deg)}to{transform:rotate(450deg) translateX(58px) rotate(-450deg)}}
+    @keyframes orbitC{from{transform:rotate(200deg) translateX(90px) rotate(-200deg)}to{transform:rotate(560deg) translateX(90px) rotate(-560deg)}}
+    @keyframes orbitD{from{transform:rotate(270deg) translateX(45px) rotate(-270deg)}to{transform:rotate(630deg) translateX(45px) rotate(-630deg)}}
+    @keyframes drawCircle{from{stroke-dashoffset:502}to{stroke-dashoffset:0}}
+    @keyframes rippleOut{0%{transform:scale(.9);opacity:.6}100%{transform:scale(2.2);opacity:0}}
+    @keyframes shimmer{0%{background-position:200% center}100%{background-position:-200% center}}
+    @keyframes barGrow{from{width:0}to{width:var(--w)}}
+
+    .stagger>*{opacity:0;animation:fadeInUp .55s ease forwards;}
+    .stagger>*:nth-child(1){animation-delay:.07s}
+    .stagger>*:nth-child(2){animation-delay:.16s}
+    .stagger>*:nth-child(3){animation-delay:.25s}
+    .stagger>*:nth-child(4){animation-delay:.34s}
+    .stagger>*:nth-child(5){animation-delay:.43s}
+    .stagger>*:nth-child(6){animation-delay:.52s}
+    .stagger>*:nth-child(7){animation-delay:.61s}
+
+    .tag{display:inline-flex;align-items:center;gap:5px;padding:3px 11px;border-radius:999px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;}
+    .tag-teal{background:rgba(20,184,166,.12);border:1px solid rgba(20,184,166,.28);color:#2dd4bf;}
+    .tag-indigo{background:rgba(99,102,241,.12);border:1px solid rgba(99,102,241,.28);color:#a5b4fc;}
+    .tag-amber{background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.28);color:#fcd34d;}
+    .tag-rose{background:rgba(244,63,94,.12);border:1px solid rgba(244,63,94,.28);color:#fda4af;}
+    .tag-green{background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.28);color:#86efac;}
+
+    .section-label{font-size:10px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:rgba(255,255,255,.25);}
+    .shimmer-text{background:linear-gradient(90deg,#14b8a6,#6366f1,#f59e0b,#14b8a6);background-size:200% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:shimmer 3s linear infinite;}
+
+    .code-block{font-family:'JetBrains Mono',monospace;font-size:10.5px;background:rgba(0,0,0,.45);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:12px 14px;color:#94a3b8;line-height:1.75;overflow:auto;}
+    .ck{color:#2dd4bf;}.cv{color:#fcd34d;}.cs{color:#86efac;}.cn{color:#a5b4fc;}.cc{color:rgba(255,255,255,.22);}
+
+    .badge-num{width:24px;height:24px;border-radius:50%;background:linear-gradient(135deg,#14b8a6,#0d9488);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:white;flex-shrink:0;}
+
+    .acc-bar{height:5px;border-radius:3px;background:rgba(255,255,255,.06);overflow:hidden;}
+    .acc-fill{height:100%;border-radius:3px;transition:width 1.2s cubic-bezier(.4,0,.2,1);}
+
+    .phase-card{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:1rem;position:relative;overflow:hidden;}
+    .phase-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;}
+    .ph1::before{background:linear-gradient(90deg,#14b8a6,#0d9488);}
+    .ph2::before{background:linear-gradient(90deg,#6366f1,#818cf8);}
+    .ph3::before{background:linear-gradient(90deg,#f59e0b,#fcd34d);}
+
+    .pres-table{width:100%;border-collapse:collapse;font-size:11.5px;}
+    .pres-table th{padding:7px 10px;text-align:left;font-weight:600;letter-spacing:.05em;text-transform:uppercase;font-size:10px;color:rgba(255,255,255,.32);border-bottom:1px solid rgba(255,255,255,.06);}
+    .pres-table td{padding:6px 10px;border-bottom:1px solid rgba(255,255,255,.04);color:rgba(255,255,255,.72);}
+    .pres-table tr:last-child td{border-bottom:none;}
+    .pres-table tr:hover td{background:rgba(255,255,255,.02);}
+
+    .yes{color:#22c55e;font-size:13px;}
+    .no{color:#f43f5e;font-size:13px;}
+    .maybe{color:#f59e0b;font-size:13px;}
+    .flow-arrow{color:rgba(20,184,166,.55);font-size:16px;text-align:center;line-height:1;}
+  </style>
+</head>
+<body>
+<div class="bg-grid"></div>
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<div class="orb orb-3"></div>
+
+<div id="progress-bar" style="width:0%"></div>
+<div id="brand-tag"><div class="live-dot"></div><span>SEPIA MONITORING — DESKTOP APP</span></div>
+<div id="slide-counter">01 / 13</div>
+<div id="key-hint"><span class="key-badge">← → Arrow Keys</span><span class="key-badge">Space / Enter</span></div>
+<button class="nav-arrow" id="arrow-prev" onclick="changeSlide(-1)"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button>
+<button class="nav-arrow" id="arrow-next" onclick="changeSlide(1)"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></button>
+<div id="nav-dots"></div>
+
+<div id="slide-container">
+
+<!-- ═══ SLIDE 1 — TITLE ═══ -->
+<div class="slide active" id="slide-1">
+  <div class="w-full max-w-5xl mx-auto flex flex-col items-center justify-center text-center gap-7 stagger">
+    <div class="tag tag-teal">📍 Feature Integration Research &amp; Architecture — June 2026</div>
+    <div>
+      <h1 class="font-bold text-white" style="font-family:'Space Grotesk',sans-serif;font-size:clamp(2.4rem,5.5vw,4.4rem);line-height:1.1;">
+        GPS Tracking +<br/><span class="shimmer-text">Geofencing</span>
+      </h1>
+      <p class="mt-3" style="color:rgba(255,255,255,.45);font-size:1rem;max-width:480px;margin:.8rem auto 0;">
+        Architecture, research &amp; roadmap for <strong style="color:rgba(255,255,255,.7);">SEPIA Monitoring Desktop App</strong>
+      </p>
+    </div>
+    <div style="width:70px;height:2px;background:linear-gradient(90deg,transparent,#14b8a6,transparent);"></div>
+    <div class="flex flex-wrap justify-center gap-3">
+      <div class="glass flex items-center gap-2 px-4 py-2 rounded-full text-sm" style="color:rgba(255,255,255,.58);">🛰️ GPS &amp; WiFi Positioning</div>
+      <div class="glass flex items-center gap-2 px-4 py-2 rounded-full text-sm" style="color:rgba(255,255,255,.58);">🔵 BLE Beacons</div>
+      <div class="glass flex items-center gap-2 px-4 py-2 rounded-full text-sm" style="color:rgba(255,255,255,.58);">🗺️ Geofencing Engine</div>
+      <div class="glass flex items-center gap-2 px-4 py-2 rounded-full text-sm" style="color:rgba(255,255,255,.58);">🛡️ Privacy First</div>
+      <div class="glass flex items-center gap-2 px-4 py-2 rounded-full text-sm" style="color:rgba(255,255,255,.58);">⚡ Tauri + Rust</div>
+    </div>
+    <div class="grid grid-cols-4 gap-4 w-full max-w-xl">
+      <div class="glass-sm p-3 text-center"><div style="font-size:1.5rem;font-weight:800;color:white;">13</div><div style="font-size:10px;color:rgba(255,255,255,.3);">SECTIONS</div></div>
+      <div class="glass-sm p-3 text-center"><div style="font-size:1.5rem;font-weight:800;color:white;">6</div><div style="font-size:10px;color:rgba(255,255,255,.3);">TECH OPTIONS</div></div>
+      <div class="glass-sm p-3 text-center"><div style="font-size:1.5rem;font-weight:800;color:white;">3</div><div style="font-size:10px;color:rgba(255,255,255,.3);">PHASES</div></div>
+      <div class="glass-sm p-3 text-center"><div style="font-size:1.5rem;font-weight:800;color:white;">v1.0</div><div style="font-size:10px;color:rgba(255,255,255,.3);">VERSION</div></div>
+    </div>
+    <button onclick="changeSlide(1)" style="background:linear-gradient(135deg,#14b8a6,#0d9488);color:white;box-shadow:0 0 28px rgba(20,184,166,.4);" class="px-8 py-3 rounded-full font-semibold text-sm flex items-center gap-2 transition-all duration-300" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+      Begin Presentation <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+    </button>
+  </div>
+</div>
+
+<!-- ═══ SLIDE 2 — WHAT IS GPS? ═══ -->
+<div class="slide" id="slide-2">
+  <div class="w-full max-w-6xl mx-auto flex flex-col gap-4 stagger">
+    <div class="flex items-center gap-3">
+      <div class="tag tag-teal">Section 02</div>
+      <h2 style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:1.5rem;color:white;">What is GPS Tracking?</h2>
+    </div>
+    <div class="grid gap-4" style="grid-template-columns:1fr 1fr 1fr;">
+      <!-- Explanation -->
+      <div class="col-span-2 flex flex-col gap-3">
+        <div class="glass p-4 rounded-2xl">
+          <p style="font-size:.875rem;line-height:1.7;color:rgba(255,255,255,.65);">
+            <strong class="text-white">31+ satellites</strong> orbit Earth at ~20,200 km altitude, each broadcasting precise timestamps. Your device receives signals from <span style="color:#2dd4bf;">4+ satellites</span> simultaneously, calculates the travel time of each signal, and uses <strong class="text-white">trilateration</strong> to pinpoint an exact 3D position — latitude, longitude, altitude.
+          </p>
+        </div>
+        <div class="glass p-4 rounded-2xl">
+          <div class="section-label mb-3">Key GPS Concepts</div>
+          <table class="pres-table">
+            <thead><tr><th>Term</th><th>Meaning</th><th>Value</th></tr></thead>
+            <tbody>
+              <tr><td>Latitude</td><td>North–South position</td><td style="color:#2dd4bf;">−90° to +90°</td></tr>
+              <tr><td>Longitude</td><td>East–West position</td><td style="color:#2dd4bf;">−180° to +180°</td></tr>
+              <tr><td>Accuracy (HDOP)</td><td>Radius of uncertainty</td><td style="color:#fcd34d;">±3–5 meters</td></tr>
+              <tr><td>TTFF — Cold Start</td><td>Time to first fix, no prior data</td><td style="color:#fda4af;">30–60 sec</td></tr>
+              <tr><td>TTFF — Hot Start</td><td>Recent almanac available</td><td style="color:#86efac;">1–5 sec</td></tr>
+              <tr><td>SBAS/WAAS correction</td><td>Ground-assisted accuracy boost</td><td style="color:#a5b4fc;">±1–2 meters</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="grid grid-cols-3 gap-3">
+          <div class="glass-teal p-3 rounded-xl text-center">
+            <div style="font-size:1.4rem;">🛰️</div>
+            <div style="font-size:.75rem;font-weight:600;color:white;margin-top:4px;">Space Segment</div>
+            <div style="font-size:10px;color:rgba(255,255,255,.4);">31 sats · 6 orbital planes</div>
+          </div>
+          <div class="glass-sm p-3 rounded-xl text-center">
+            <div style="font-size:1.4rem;">📡</div>
+            <div style="font-size:.75rem;font-weight:600;color:white;margin-top:4px;">Control Segment</div>
+            <div style="font-size:10px;color:rgba(255,255,255,.4);">Ground stations · Corrections</div>
+          </div>
+          <div class="glass-sm p-3 rounded-xl text-center">
+            <div style="font-size:1.4rem;">📱</div>
+            <div style="font-size:.75rem;font-weight:600;color:white;margin-top:4px;">User Segment</div>
+            <div style="font-size:10px;color:rgba(255,255,255,.4);">Phones, GPS receivers</div>
+          </div>
+        </div>
+      </div>
+      <!-- Satellite Visual -->
+      <div class="flex flex-col gap-3">
+        <div class="glass p-5 rounded-2xl flex flex-col items-center gap-4">
+          <div class="section-label">Trilateration</div>
+          <div style="position:relative;width:170px;height:170px;">
+            <svg style="position:absolute;inset:0;width:100%;height:100%;" viewBox="0 0 170 170">
+              <circle cx="85" cy="85" r="70" fill="none" stroke="rgba(20,184,166,.07)" stroke-width="1"/>
+              <circle cx="85" cy="85" r="55" fill="none" stroke="rgba(99,102,241,.07)" stroke-width="1" stroke-dasharray="4 3"/>
+              <circle cx="85" cy="85" r="38" fill="none" stroke="rgba(245,158,11,.06)" stroke-width="1" stroke-dasharray="4 3"/>
+              <line x1="85" y1="85" x2="85" y2="15" stroke="rgba(20,184,166,.3)" stroke-width="1" stroke-dasharray="3 3"/>
+              <line x1="85" y1="85" x2="150" y2="130" stroke="rgba(99,102,241,.3)" stroke-width="1" stroke-dasharray="3 3"/>
+              <line x1="85" y1="85" x2="20" y2="130" stroke="rgba(245,158,11,.3)" stroke-width="1" stroke-dasharray="3 3"/>
+              <circle cx="85" cy="85" r="9" fill="rgba(20,184,166,.2)" stroke="#14b8a6" stroke-width="1.5"/>
+              <circle cx="85" cy="85" r="4" fill="#14b8a6"/>
+            </svg>
+            <div style="position:absolute;top:50%;left:50%;animation:orbit 4s linear infinite;transform-origin:0 0;">
+              <div style="width:13px;height:13px;border-radius:3px;background:#14b8a6;box-shadow:0 0 7px #14b8a6;margin:-6.5px;font-size:7px;display:flex;align-items:center;justify-content:center;">🛰</div>
+            </div>
+            <div style="position:absolute;top:50%;left:50%;animation:orbitB 7s linear infinite;transform-origin:0 0;">
+              <div style="width:13px;height:13px;border-radius:3px;background:#6366f1;box-shadow:0 0 7px #6366f1;margin:-6.5px;font-size:7px;display:flex;align-items:center;justify-content:center;">🛰</div>
+            </div>
+            <div style="position:absolute;top:50%;left:50%;animation:orbitC 5.5s linear infinite;transform-origin:0 0;">
+              <div style="width:13px;height:13px;border-radius:3px;background:#f59e0b;box-shadow:0 0 7px #f59e0b;margin:-6.5px;font-size:7px;display:flex;align-items:center;justify-content:center;">🛰</div>
+            </div>
+            <div style="position:absolute;top:50%;left:50%;animation:orbitD 3.2s linear infinite;transform-origin:0 0;">
+              <div style="width:13px;height:13px;border-radius:3px;background:#f43f5e;box-shadow:0 0 7px #f43f5e;margin:-6.5px;font-size:7px;display:flex;align-items:center;justify-content:center;">🛰</div>
+            </div>
+          </div>
+          <div class="text-center">
+            <div style="font-size:.7rem;font-weight:600;color:white;">4+ Satellites → Device</div>
+            <div style="font-size:10px;color:rgba(255,255,255,.38);margin-top:2px;">Result: ±3–5 metre accuracy</div>
+          </div>
+        </div>
+        <div class="glass-sm p-3 rounded-xl text-center">
+          <div style="font-size:10px;color:rgba(255,255,255,.32);margin-bottom:5px;">Civilian Accuracy</div>
+          <div style="font-size:2rem;font-weight:800;color:#14b8a6;font-family:'Space Grotesk',sans-serif;">±5m</div>
+          <div style="font-size:10px;color:rgba(255,255,255,.3);">±1–2m with SBAS</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SLIDE 3 — LOCATION TECH COMPARISON ═══ -->
+<div class="slide" id="slide-3">
+  <div class="w-full max-w-6xl mx-auto flex flex-col gap-4 stagger">
+    <div class="flex items-center gap-3">
+      <div class="tag tag-indigo">Section 03</div>
+      <h2 style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:1.5rem;color:white;">Location Technologies — Comparison</h2>
+    </div>
+    <div class="grid grid-cols-3 gap-3">
+      <div class="glass p-4 rounded-xl">
+        <div class="flex items-center gap-2 mb-2"><span>🛰️</span><span style="font-weight:600;color:white;font-size:.875rem;">GPS / A-GPS</span></div>
+        <div class="acc-bar mb-1"><div class="acc-fill" id="bar1" style="width:0%;background:linear-gradient(90deg,#14b8a6,#0d9488);"></div></div>
+        <div style="font-size:10px;color:#2dd4bf;margin-bottom:8px;">Accuracy: <strong>±3–5 m</strong></div>
+        <div style="font-size:11px;color:rgba(255,255,255,.55);line-height:1.6;"><span class="yes">✓</span> Extremely precise<br/><span class="yes">✓</span> Works offline once locked<br/><span class="no">✗</span> Requires GPS chip hardware<br/><span class="no">✗</span> <strong style="color:#fda4af;">Desktops have NO GPS chip</strong></div>
+      </div>
+      <div class="glass p-4 rounded-xl" style="border-color:rgba(20,184,166,.3);background:rgba(20,184,166,.06);">
+        <div class="flex items-center justify-between mb-1">
+          <div class="flex items-center gap-2"><span>📶</span><span style="font-weight:600;color:white;font-size:.875rem;">WiFi Positioning</span></div>
+          <div class="tag tag-green" style="font-size:9px;padding:1px 7px;">PRIMARY ✓</div>
+        </div>
+        <div class="acc-bar mb-1"><div class="acc-fill" id="bar2" style="width:0%;background:linear-gradient(90deg,#22c55e,#16a34a);"></div></div>
+        <div style="font-size:10px;color:#86efac;margin-bottom:8px;">Accuracy: <strong>±15–40 m</strong></div>
+        <div style="font-size:11px;color:rgba(255,255,255,.55);line-height:1.6;"><span class="yes">✓</span> Works on desktops &amp; laptops<br/><span class="yes">✓</span> Works indoors<br/><span class="yes">✓</span> Fast (1–3 sec), no hardware needed<br/><span class="maybe">~</span> WiFi must be enabled</div>
+      </div>
+      <div class="glass p-4 rounded-xl">
+        <div class="flex items-center justify-between mb-1">
+          <div class="flex items-center gap-2"><span>🌐</span><span style="font-weight:600;color:white;font-size:.875rem;">IP Geolocation</span></div>
+          <div class="tag tag-amber" style="font-size:9px;padding:1px 7px;">FALLBACK</div>
+        </div>
+        <div class="acc-bar mb-1"><div class="acc-fill" id="bar3" style="width:0%;background:linear-gradient(90deg,#f59e0b,#d97706);"></div></div>
+        <div style="font-size:10px;color:#fcd34d;margin-bottom:8px;">Accuracy: <strong>±5–50 km</strong></div>
+        <div style="font-size:11px;color:rgba(255,255,255,.55);line-height:1.6;"><span class="yes">✓</span> No hardware needed<br/><span class="yes">✓</span> Works on any device<br/><span class="no">✗</span> VPN breaks it completely<br/><span class="no">✗</span> Too imprecise for geofencing</div>
+      </div>
+      <div class="glass p-4 rounded-xl">
+        <div class="flex items-center gap-2 mb-2"><span>📡</span><span style="font-weight:600;color:white;font-size:.875rem;">Cell Tower</span></div>
+        <div class="acc-bar mb-1"><div class="acc-fill" id="bar4" style="width:0%;background:linear-gradient(90deg,#f43f5e,#be123c);"></div></div>
+        <div style="font-size:10px;color:#fda4af;margin-bottom:8px;">Accuracy: <strong>±100–2000 m</strong></div>
+        <div style="font-size:11px;color:rgba(255,255,255,.55);line-height:1.6;"><span class="yes">✓</span> Works indoors<br/><span class="no">✗</span> Desktops have no cellular modem<br/><span class="no">✗</span> Very imprecise</div>
+      </div>
+      <div class="glass p-4 rounded-xl">
+        <div class="flex items-center justify-between mb-1">
+          <div class="flex items-center gap-2"><span>🔵</span><span style="font-weight:600;color:white;font-size:.875rem;">BLE Beacons</span></div>
+          <div class="tag tag-indigo" style="font-size:9px;padding:1px 7px;">PHASE 2</div>
+        </div>
+        <div class="acc-bar mb-1"><div class="acc-fill" id="bar5" style="width:0%;background:linear-gradient(90deg,#6366f1,#4f46e5);"></div></div>
+        <div style="font-size:10px;color:#a5b4fc;margin-bottom:8px;">Accuracy: <strong>±1–3 m (indoor!)</strong></div>
+        <div style="font-size:11px;color:rgba(255,255,255,.55);line-height:1.6;"><span class="yes">✓</span> Desk-level precision indoors<br/><span class="yes">✓</span> Syncs with SEPIA floor plan<br/><span class="no">✗</span> Requires beacon hardware</div>
+      </div>
+      <div class="glass p-4 rounded-xl">
+        <div class="flex items-center justify-between mb-1">
+          <div class="flex items-center gap-2"><span>🏢</span><span style="font-weight:600;color:white;font-size:.875rem;">Corp Network</span></div>
+          <div class="tag tag-teal" style="font-size:9px;padding:1px 7px;">SIMPLE ✓</div>
+        </div>
+        <div class="acc-bar mb-1"><div class="acc-fill" id="bar6" style="width:0%;background:linear-gradient(90deg,#14b8a6,#6366f1);"></div></div>
+        <div style="font-size:10px;color:#2dd4bf;margin-bottom:8px;">Binary: <strong>In-office / Not</strong></div>
+        <div style="font-size:11px;color:rgba(255,255,255,.55);line-height:1.6;"><span class="yes">✓</span> Detect corporate WiFi SSID<br/><span class="yes">✓</span> Or VPN subnet detection<br/><span class="yes">✓</span> Zero hardware, instant</div>
+      </div>
+    </div>
+    <div class="glass-teal p-3 rounded-xl flex items-center gap-4">
+      <div style="font-size:1.6rem;flex-shrink:0;">💡</div>
+      <div>
+        <span style="font-size:.8rem;font-weight:600;color:white;">Key Insight for SEPIA: </span>
+        <span style="font-size:.8rem;color:rgba(255,255,255,.6);">Desktops have <strong style="color:#fda4af;">no GPS chip</strong>. Strategy → <strong style="color:#2dd4bf;">WiFi Positioning (primary)</strong> + <strong style="color:#fcd34d;">IP Geolocation (fallback)</strong> + <strong style="color:#a5b4fc;">Corporate Network (binary confirmation)</strong></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SLIDE 4 — WHAT IS GEOFENCING? ═══ -->
+<div class="slide" id="slide-4">
+  <div class="w-full max-w-6xl mx-auto flex flex-col gap-4 stagger">
+    <div class="flex items-center gap-3">
+      <div class="tag tag-amber">Section 04</div>
+      <h2 style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:1.5rem;color:white;">What is Geofencing?</h2>
+    </div>
+    <div class="grid gap-4" style="grid-template-columns:1fr 1fr 1fr;">
+      <div class="col-span-2 flex flex-col gap-3">
+        <div class="glass p-4 rounded-2xl">
+          <p style="font-size:.875rem;line-height:1.7;color:rgba(255,255,255,.65);">
+            A <strong class="text-white">Geofence</strong> is an invisible digital boundary drawn on a map. When a device <strong style="color:#2dd4bf;">enters</strong> or <strong style="color:#fda4af;">exits</strong> this boundary, the system automatically <strong class="text-white">triggers an action</strong> — clocking in, sending an alert, or auto-logging attendance.
+          </p>
+          <div class="mt-3 p-3 rounded-xl" style="background:rgba(20,184,166,.07);border:1px solid rgba(20,184,166,.15);">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#2dd4bf;line-height:1.8;">
+              → Employee enters geofence = <strong>Clock-In ✓</strong><br/>
+              → Employee exits geofence  = <strong>Clock-Out ✓</strong><br/>
+              → 9:30 AM, never entered   = <strong>Late Alert 🔔</strong>
+            </div>
+          </div>
+        </div>
+        <div class="glass p-4 rounded-2xl">
+          <div class="section-label mb-3">Geofence Event Types</div>
+          <div class="grid grid-cols-2 gap-3">
+            <div class="glass-sm p-3 rounded-xl flex items-start gap-3">
+              <div style="width:30px;height:30px;border-radius:8px;background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.3);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px;">→</div>
+              <div><div style="font-size:.75rem;font-weight:600;color:#86efac;">ENTRY</div><div style="font-size:11px;color:rgba(255,255,255,.5);">Outside→Inside. Triggers: clock-in, start timer, notification</div></div>
+            </div>
+            <div class="glass-sm p-3 rounded-xl flex items-start gap-3">
+              <div style="width:30px;height:30px;border-radius:8px;background:rgba(244,63,94,.15);border:1px solid rgba(244,63,94,.3);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px;">←</div>
+              <div><div style="font-size:.75rem;font-weight:600;color:#fda4af;">EXIT</div><div style="font-size:11px;color:rgba(255,255,255,.5);">Inside→Outside. Triggers: clock-out, stop timer, report update</div></div>
+            </div>
+            <div class="glass-sm p-3 rounded-xl flex items-start gap-3">
+              <div style="width:30px;height:30px;border-radius:8px;background:rgba(99,102,241,.15);border:1px solid rgba(99,102,241,.3);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px;">⏱</div>
+              <div><div style="font-size:.75rem;font-weight:600;color:#a5b4fc;">DWELL</div><div style="font-size:11px;color:rgba(255,255,255,.5);">Inside for N minutes. Confirms presence (not a pass-through)</div></div>
+            </div>
+            <div class="glass-sm p-3 rounded-xl flex items-start gap-3">
+              <div style="width:30px;height:30px;border-radius:8px;background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.3);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px;">🔔</div>
+              <div><div style="font-size:.75rem;font-weight:600;color:#fcd34d;">NO-SHOW</div><div style="font-size:11px;color:rgba(255,255,255,.5);">Work time started, device never entered → absence alert</div></div>
+            </div>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div class="glass-sm p-3 rounded-xl">
+            <div style="font-size:.75rem;font-weight:600;color:white;margin-bottom:3px;">🔵 Circular Geofence</div>
+            <div style="font-size:11px;color:rgba(255,255,255,.5);">Center + radius. Simple to configure. Uses Haversine formula. Best for office buildings.</div>
+          </div>
+          <div class="glass-sm p-3 rounded-xl">
+            <div style="font-size:.75rem;font-weight:600;color:white;margin-bottom:3px;">🔶 Polygon Geofence</div>
+            <div style="font-size:11px;color:rgba(255,255,255,.5);">Custom shape. Traces actual campus boundary. Uses Ray Casting algorithm. More precise.</div>
+          </div>
+        </div>
+      </div>
+      <!-- Geofence Visual -->
+      <div class="glass p-5 rounded-2xl flex flex-col items-center gap-4">
+        <div class="section-label">Live Geofence</div>
+        <svg width="190" height="190" viewBox="0 0 190 190">
+          <rect width="190" height="190" rx="14" fill="rgba(0,0,0,.35)"/>
+          <g stroke="rgba(255,255,255,.04)" stroke-width="1">
+            <line x1="0" y1="47" x2="190" y2="47"/><line x1="0" y1="95" x2="190" y2="95"/><line x1="0" y1="143" x2="190" y2="143"/>
+            <line x1="47" y1="0" x2="47" y2="190"/><line x1="95" y1="0" x2="95" y2="190"/><line x1="143" y1="0" x2="143" y2="190"/>
+          </g>
+          <circle cx="95" cy="95" r="65" fill="rgba(20,184,166,.06)" stroke="#14b8a6" stroke-width="2" class="geofence-ring" stroke-dasharray="408" stroke-dashoffset="408"/>
+          <circle cx="95" cy="95" r="65" fill="none" stroke="rgba(20,184,166,.35)" stroke-width="1" style="animation:rippleOut 2.2s ease-out infinite;transform-origin:95px 95px;"/>
+          <circle cx="95" cy="95" r="65" fill="none" stroke="rgba(20,184,166,.2)" stroke-width="1" style="animation:rippleOut 2.2s ease-out .8s infinite;transform-origin:95px 95px;"/>
+          <rect x="78" y="78" width="34" height="34" rx="5" fill="rgba(20,184,166,.22)" stroke="#14b8a6" stroke-width="1.5"/>
+          <rect x="83" y="83" width="9" height="9" rx="1" fill="rgba(20,184,166,.45)"/>
+          <rect x="98" y="83" width="9" height="9" rx="1" fill="rgba(20,184,166,.45)"/>
+          <rect x="83" y="98" width="9" height="9" rx="1" fill="rgba(20,184,166,.45)"/>
+          <rect x="98" y="98" width="9" height="9" rx="1" fill="rgba(20,184,166,.45)"/>
+          <circle cx="122" cy="78" r="8" fill="#22c55e" opacity=".92"/>
+          <text x="122" y="81" text-anchor="middle" font-size="8" fill="white" font-weight="bold">E1</text>
+          <circle cx="165" cy="42" r="8" fill="#f43f5e" opacity=".92"/>
+          <text x="165" y="45" text-anchor="middle" font-size="8" fill="white" font-weight="bold">E2</text>
+          <text x="112" y="68" font-size="7" fill="#86efac" font-weight="600">✓ Inside</text>
+          <text x="148" y="34" font-size="7" fill="#fda4af" font-weight="600">✗ Outside</text>
+          <text x="95" y="178" text-anchor="middle" font-size="9" fill="rgba(255,255,255,.35)">Office Geofence — r = 200m</text>
+        </svg>
+        <div class="grid grid-cols-2 gap-2 w-full">
+          <div class="glass-sm p-2 rounded-lg text-center">
+            <div style="font-size:.7rem;font-weight:600;color:#86efac;">E1 — INSIDE</div>
+            <div style="font-size:10px;color:rgba(255,255,255,.38);">Clock-In triggered</div>
+          </div>
+          <div class="glass-sm p-2 rounded-lg text-center">
+            <div style="font-size:.7rem;font-weight:600;color:#fda4af;">E2 — OUTSIDE</div>
+            <div style="font-size:10px;color:rgba(255,255,255,.38);">Alert / No action</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SLIDE 5 — DESKTOP CHALLENGES ═══ -->
+<div class="slide" id="slide-5">
+  <div class="w-full max-w-6xl mx-auto flex flex-col gap-4 stagger">
+    <div class="flex items-center gap-3">
+      <div class="tag tag-rose">Section 05</div>
+      <h2 style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:1.5rem;color:white;">Desktop Challenges — Why GPS Won't Work Directly</h2>
+    </div>
+    <div class="grid grid-cols-2 gap-4">
+      <div class="flex flex-col gap-3">
+        <div class="glass p-4 rounded-2xl">
+          <div class="section-label mb-3">Device Hardware Reality</div>
+          <table class="pres-table">
+            <thead><tr><th>Device</th><th>GPS</th><th>WiFi</th><th>Bluetooth</th><th>Cellular</th></tr></thead>
+            <tbody>
+              <tr><td>📱 iPhone / Android</td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td></tr>
+              <tr><td>💻 MacBook Pro</td><td><span class="no">✗</span></td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td><td><span class="no">✗</span></td></tr>
+              <tr><td>💻 Windows Laptop</td><td><span class="no">✗</span></td><td><span class="yes">✓</span></td><td><span class="maybe">~</span></td><td><span class="no">✗</span></td></tr>
+              <tr><td>🖥️ Desktop PC</td><td><span class="no">✗</span></td><td><span class="maybe">~</span></td><td><span class="maybe">~</span></td><td><span class="no">✗</span></td></tr>
+              <tr><td>💻 Surface Pro LTE</td><td><span class="no">✗</span></td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="glass p-3 rounded-xl" style="border-color:rgba(244,63,94,.2);background:rgba(244,63,94,.06);">
+          <div class="flex items-center gap-2 mb-2"><span>⚠️</span><span style="font-size:.8rem;font-weight:600;color:white;">The Core Problem</span></div>
+          <p style="font-size:11px;color:rgba(255,255,255,.6);line-height:1.6;">Standard desktops &amp; most laptops <strong style="color:#fda4af;">do NOT contain a GPS hardware chip</strong>. GPS requires a dedicated radio receiver — this is hardware. You cannot add it in software. This is a fundamental device limitation.</p>
+        </div>
+      </div>
+      <div class="glass p-4 rounded-2xl flex flex-col gap-3">
+        <div class="section-label">Our 5-Strategy Desktop Solution</div>
+        <div class="flex flex-col gap-2">
+          <div class="glass-sm p-3 rounded-xl flex items-start gap-3">
+            <div class="badge-num">1</div>
+            <div><div style="font-size:.8rem;font-weight:600;color:white;" class="flex items-center gap-2">WiFi Positioning <span class="tag tag-green" style="font-size:9px;padding:1px 6px;">PRIMARY</span></div><div style="font-size:11px;color:rgba(255,255,255,.5);">Windows Location API → scans nearby WiFi SSIDs → matches Google/Microsoft database → ±15–40m accuracy</div></div>
+          </div>
+          <div class="glass-sm p-3 rounded-xl flex items-start gap-3">
+            <div class="badge-num" style="background:linear-gradient(135deg,#6366f1,#4f46e5);">2</div>
+            <div><div style="font-size:.8rem;font-weight:600;color:white;" class="flex items-center gap-2">IP Geolocation <span class="tag tag-amber" style="font-size:9px;padding:1px 6px;">FALLBACK</span></div><div style="font-size:11px;color:rgba(255,255,255,.5);">Query ipinfo.io or MaxMind → city-level detection. Used when WiFi unavailable or for VPN detection</div></div>
+          </div>
+          <div class="glass-sm p-3 rounded-xl flex items-start gap-3">
+            <div class="badge-num" style="background:linear-gradient(135deg,#f59e0b,#d97706);">3</div>
+            <div><div style="font-size:.8rem;font-weight:600;color:white;">Manual Check-In</div><div style="font-size:11px;color:rgba(255,255,255,.5);">Employee selects "Office / WFH / Client Site". System validates via IP + WiFi cross-check</div></div>
+          </div>
+          <div class="glass-sm p-3 rounded-xl flex items-start gap-3">
+            <div class="badge-num" style="background:linear-gradient(135deg,#6366f1,#818cf8);">4</div>
+            <div><div style="font-size:.8rem;font-weight:600;color:white;" class="flex items-center gap-2">BLE Beacons <span class="tag tag-indigo" style="font-size:9px;padding:1px 6px;">PHASE 2</span></div><div style="font-size:11px;color:rgba(255,255,255,.5);">Install BLE beacons in office → desk-level precision ±1–3m. Syncs with SEPIA's virtual floor plan</div></div>
+          </div>
+          <div class="glass-sm p-3 rounded-xl flex items-start gap-3">
+            <div class="badge-num" style="background:linear-gradient(135deg,#14b8a6,#6366f1);">5</div>
+            <div><div style="font-size:.8rem;font-weight:600;color:white;">Corporate Network Detection</div><div style="font-size:11px;color:rgba(255,255,255,.5);">Is device on corporate WiFi SSID or VPN subnet? Binary: In-office vs. remote. Instant &amp; reliable</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SLIDE 6 — HUBSTAFF REFERENCE ═══ -->
+<div class="slide" id="slide-6">
+  <div class="w-full max-w-6xl mx-auto flex flex-col gap-4 stagger">
+    <div class="flex items-center gap-3">
+      <div class="tag tag-indigo">Section 06</div>
+      <h2 style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:1.5rem;color:white;">How Hubstaff Does It — Reference Architecture</h2>
+    </div>
+    <div class="grid grid-cols-3 gap-4">
+      <div class="col-span-2 flex flex-col gap-3">
+        <div class="glass p-4 rounded-2xl">
+          <div class="section-label mb-3">Complete Data Flow: Employee → Manager Dashboard</div>
+          <div class="flex flex-col gap-2">
+            <div class="flex items-center gap-3"><div class="badge-num" style="font-size:10px;">1</div><div class="flex-1 glass-sm p-2 rounded-lg"><span style="font-size:.75rem;font-weight:600;color:white;">App Opens → </span><span style="font-size:11px;color:rgba(255,255,255,.55);">Auth with JWT, download geofences, start location service, register OS-level geofence listeners</span></div></div>
+            <div class="flex items-center gap-3"><div class="badge-num" style="font-size:10px;background:linear-gradient(135deg,#6366f1,#4f46e5);">2</div><div class="flex-1 glass-sm p-2 rounded-lg"><span style="font-size:.75rem;font-weight:600;color:white;">Location Captured → </span><span style="font-size:11px;color:rgba(255,255,255,.55);">WiFi/GPS provides coordinates every 5–15 min. Validates quality, checks accuracy threshold (&lt;50m accepted)</span></div></div>
+            <div class="flex items-center gap-3"><div class="badge-num" style="font-size:10px;background:linear-gradient(135deg,#f59e0b,#d97706);">3</div><div class="flex-1 glass-sm p-2 rounded-lg"><span style="font-size:.75rem;font-weight:600;color:white;">Background Check → </span><span style="font-size:11px;color:rgba(255,255,255,.55);">Checks against cached geofences, detects state changes (entry/exit), adds to local upload queue</span></div></div>
+            <div class="flex items-center gap-3"><div class="badge-num" style="font-size:10px;background:linear-gradient(135deg,#22c55e,#16a34a);">4</div><div class="flex-1 glass-sm p-2 rounded-lg"><span style="font-size:.75rem;font-weight:600;color:white;">API Transmission → </span><span style="font-size:11px;color:rgba(255,255,255,.55);">HTTPS POST with TLS 1.3. On failure: exponential backoff. Geofence events re-validated server-side</span></div></div>
+            <div class="flex items-center gap-3"><div class="badge-num" style="font-size:10px;background:linear-gradient(135deg,#f43f5e,#be123c);">5</div><div class="flex-1 glass-sm p-2 rounded-lg"><span style="font-size:.75rem;font-weight:600;color:white;">Manager Dashboard → </span><span style="font-size:11px;color:rgba(255,255,255,.55);">WebSocket/SSE push. Live map, auto attendance updated, alerts panel, movement timeline visible</span></div></div>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div class="glass-sm p-3 rounded-xl">
+            <div style="font-size:.75rem;font-weight:600;color:white;margin-bottom:6px;">🖥️ Hubstaff Desktop (Like SEPIA)</div>
+            <div style="font-size:11px;color:rgba(255,255,255,.5);line-height:1.7;">→ Windows Location API (WiFi-based)<br/>→ Fallback to IP Geolocation<br/>→ Geofences cached locally in memory<br/>→ Every 5–15 min location check</div>
+          </div>
+          <div class="glass-sm p-3 rounded-xl">
+            <div style="font-size:.75rem;font-weight:600;color:white;margin-bottom:6px;">📱 Hubstaff Mobile (Primary GPS)</div>
+            <div style="font-size:11px;color:rgba(255,255,255,.5);line-height:1.7;">→ FusedLocationProviderClient<br/>→ OS-level geofencing API<br/>→ Android WorkManager background<br/>→ Every 1–5 min location check</div>
+          </div>
+        </div>
+      </div>
+      <div class="flex flex-col gap-3">
+        <div class="glass p-4 rounded-xl">
+          <div class="section-label mb-2">Location Data Packet</div>
+          <div class="code-block">
+<span class="cc">// Sent to API every N minutes</span>
+{
+  <span class="ck">"employee_id"</span>: <span class="cs">"emp_123"</span>,
+  <span class="ck">"org_id"</span>: <span class="cs">"org_456"</span>,
+  <span class="ck">"timestamp"</span>: <span class="cs">"2026-06-24T09:15Z"</span>,
+  <span class="ck">"latitude"</span>: <span class="cn">28.6139</span>,
+  <span class="ck">"longitude"</span>: <span class="cn">77.2090</span>,
+  <span class="ck">"accuracy"</span>: <span class="cn">25.0</span>,  <span class="cc">← meters</span>
+  <span class="ck">"speed"</span>: <span class="cn">0.0</span>,      <span class="cc">← stationary</span>
+  <span class="ck">"source"</span>: <span class="cs">"wifi"</span>,   <span class="cc">← gps|wifi|ip</span>
+  <span class="ck">"method"</span>: <span class="cs">"windows_api"</span>
+}
+          </div>
+        </div>
+        <div class="glass-sm p-3 rounded-xl">
+          <div class="section-label mb-2">Hubstaff Architecture Stack</div>
+          <div class="flex flex-col gap-1">
+            <div class="glass-sm p-2 rounded text-center" style="font-size:11px;color:#2dd4bf;">Client (Desktop · Mobile · Web)</div>
+            <div class="text-center" style="font-size:11px;color:rgba(255,255,255,.25);">↕ HTTPS + REST</div>
+            <div class="glass-sm p-2 rounded text-center" style="font-size:11px;color:#a5b4fc;">API Gateway (Auth · Rate Limiting)</div>
+            <div class="text-center" style="font-size:11px;color:rgba(255,255,255,.25);">↕</div>
+            <div class="glass-sm p-2 rounded text-center" style="font-size:11px;color:#fcd34d;">Services (Location · Geofence · Alerts)</div>
+            <div class="text-center" style="font-size:11px;color:rgba(255,255,255,.25);">↕</div>
+            <div class="glass-sm p-2 rounded text-center" style="font-size:11px;color:#86efac;">PostgreSQL · TimeSeries · Redis</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SLIDE 7 — SEPIA ARCHITECTURE ═══ -->
+<div class="slide" id="slide-7">
+  <div class="w-full max-w-6xl mx-auto flex flex-col gap-4 stagger">
+    <div class="flex items-center gap-3">
+      <div class="tag tag-teal">Section 07</div>
+      <h2 style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:1.5rem;color:white;">SEPIA — Proposed GPS Integration Architecture</h2>
+    </div>
+    <div class="grid grid-cols-3 gap-4">
+      <div class="col-span-2 glass p-5 rounded-2xl flex flex-col gap-3">
+        <div class="section-label">Full System — New Modules Highlighted in Teal</div>
+        <div class="glass-sm p-3 rounded-xl">
+          <div style="font-size:.75rem;font-weight:600;color:white;margin-bottom:8px;">🖥️ React UI (Tauri Frontend)</div>
+          <div class="flex gap-2 flex-wrap">
+            <div class="glass-sm px-3 py-1 rounded text-xs" style="color:rgba(255,255,255,.45);">Login</div>
+            <div class="glass-sm px-3 py-1 rounded text-xs" style="color:rgba(255,255,255,.45);">Dashboard</div>
+            <div class="glass-sm px-3 py-1 rounded text-xs" style="color:rgba(255,255,255,.45);">Floor Plan</div>
+            <div class="px-3 py-1 rounded text-xs font-semibold" style="background:rgba(20,184,166,.18);border:1px solid rgba(20,184,166,.38);color:#2dd4bf;">📍 Location Map [NEW]</div>
+            <div class="px-3 py-1 rounded text-xs font-semibold" style="background:rgba(20,184,166,.18);border:1px solid rgba(20,184,166,.38);color:#2dd4bf;">🗺️ Geofence Config [NEW]</div>
+          </div>
+        </div>
+        <div class="text-center" style="font-size:11px;color:rgba(255,255,255,.2);">↕ Tauri IPC (Commands + Events)</div>
+        <div class="glass-sm p-3 rounded-xl">
+          <div style="font-size:.75rem;font-weight:600;color:white;margin-bottom:8px;">⚙️ Tauri Rust Backend (Background Agent Core)</div>
+          <div class="flex gap-2 flex-wrap">
+            <div class="glass-sm px-3 py-1 rounded text-xs" style="color:rgba(255,255,255,.45);">Activity Monitor</div>
+            <div class="glass-sm px-3 py-1 rounded text-xs" style="color:rgba(255,255,255,.45);">Screenshot Capture</div>
+            <div class="glass-sm px-3 py-1 rounded text-xs" style="color:rgba(255,255,255,.45);">Idle Detector</div>
+            <div class="px-3 py-1 rounded text-xs font-semibold" style="background:rgba(20,184,166,.18);border:1px solid rgba(20,184,166,.38);color:#2dd4bf;">📍 location_module.rs [NEW]</div>
+            <div class="px-3 py-1 rounded text-xs font-semibold" style="background:rgba(20,184,166,.18);border:1px solid rgba(20,184,166,.38);color:#2dd4bf;">🗺️ geofence_engine.rs [NEW]</div>
+          </div>
+        </div>
+        <div class="text-center" style="font-size:11px;color:rgba(255,255,255,.2);">↕ Read / Write</div>
+        <div class="glass-sm p-3 rounded-xl">
+          <div style="font-size:.75rem;font-weight:600;color:white;margin-bottom:8px;">💾 SQLite Local Buffer (WAL mode)</div>
+          <div class="flex gap-2 flex-wrap">
+            <div class="glass-sm px-3 py-1 rounded text-xs" style="color:rgba(255,255,255,.45);">pending_events</div>
+            <div class="glass-sm px-3 py-1 rounded text-xs" style="color:rgba(255,255,255,.45);">consent</div>
+            <div class="px-3 py-1 rounded text-xs font-semibold" style="background:rgba(20,184,166,.18);border:1px solid rgba(20,184,166,.38);color:#2dd4bf;">location_records [NEW]</div>
+            <div class="px-3 py-1 rounded text-xs font-semibold" style="background:rgba(20,184,166,.18);border:1px solid rgba(20,184,166,.38);color:#2dd4bf;">geofence_cache [NEW]</div>
+          </div>
+        </div>
+        <div class="text-center" style="font-size:11px;color:rgba(255,255,255,.2);">↕ HTTPS REST (Batch Upload — Sync Engine)</div>
+        <div class="glass-sm p-3 rounded-xl">
+          <div style="font-size:.75rem;font-weight:600;color:white;margin-bottom:8px;">☁️ Supabase Cloud (PostgreSQL + Edge Functions)</div>
+          <div class="flex gap-2 flex-wrap">
+            <div class="glass-sm px-3 py-1 rounded text-xs" style="color:rgba(255,255,255,.45);">activity.events</div>
+            <div class="glass-sm px-3 py-1 rounded text-xs" style="color:rgba(255,255,255,.45);">presence.history</div>
+            <div class="px-3 py-1 rounded text-xs font-semibold" style="background:rgba(20,184,166,.18);border:1px solid rgba(20,184,166,.38);color:#2dd4bf;">location.records [NEW]</div>
+            <div class="px-3 py-1 rounded text-xs font-semibold" style="background:rgba(20,184,166,.18);border:1px solid rgba(20,184,166,.38);color:#2dd4bf;">geofences [NEW]</div>
+            <div class="px-3 py-1 rounded text-xs font-semibold" style="background:rgba(20,184,166,.18);border:1px solid rgba(20,184,166,.38);color:#2dd4bf;">geofence_events [NEW]</div>
+          </div>
+        </div>
+      </div>
+      <div class="flex flex-col gap-3">
+        <div class="glass p-4 rounded-xl flex flex-col gap-3">
+          <div class="section-label">New Modules Detail</div>
+          <div><div class="flex items-center gap-2 mb-1"><div style="width:7px;height:7px;border-radius:2px;background:#14b8a6;flex-shrink:0;"></div><span style="font-size:.75rem;font-weight:600;color:white;">location_module.rs</span></div><div style="font-size:11px;color:rgba(255,255,255,.5);">Polls Windows Location API every 10 min. Returns lat/lng/accuracy/source. Falls back to IP if WiFi unavailable.</div></div>
+          <div><div class="flex items-center gap-2 mb-1"><div style="width:7px;height:7px;border-radius:2px;background:#6366f1;flex-shrink:0;"></div><span style="font-size:.75rem;font-weight:600;color:white;">geofence_engine.rs</span></div><div style="font-size:11px;color:rgba(255,255,255,.5);">Loads geofences on startup. Checks each location update via Haversine/Ray Casting. Emits entry/exit via Tauri IPC.</div></div>
+          <div><div class="flex items-center gap-2 mb-1"><div style="width:7px;height:7px;border-radius:2px;background:#f59e0b;flex-shrink:0;"></div><span style="font-size:.75rem;font-weight:600;color:white;">ingest-location Edge Fn</span></div><div style="font-size:11px;color:rgba(255,255,255,.5);">Receives location batches. Validates, stores, fires alert Edge Function on geofence events.</div></div>
+          <div><div class="flex items-center gap-2 mb-1"><div style="width:7px;height:7px;border-radius:2px;background:#f43f5e;flex-shrink:0;"></div><span style="font-size:.75rem;font-weight:600;color:white;">LocationMap (React)</span></div><div style="font-size:11px;color:rgba(255,255,255,.5);">New dashboard tab. Employee locations on map. Geofence timeline. Admin drag-and-drop config.</div></div>
+        </div>
+        <div class="glass-teal p-3 rounded-xl">
+          <div style="font-size:.75rem;font-weight:600;color:white;margin-bottom:6px;">Communication Flow</div>
+          <div class="code-block" style="font-size:10px;">
+location_module.rs
+  ↓ tokio::mpsc channel
+geofence_engine.rs
+  ↓ Tauri IPC event
+React UI (RTK Query)
+  ↓ HTTPS POST
+Supabase Edge Function
+  ↓ PostgreSQL insert
+Realtime → Manager Dashboard
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SLIDE 8 — GEOFENCING WORKFLOW ═══ -->
+<div class="slide" id="slide-8">
+  <div class="w-full max-w-6xl mx-auto flex flex-col gap-4 stagger">
+    <div class="flex items-center gap-3">
+      <div class="tag tag-teal">Section 08</div>
+      <h2 style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:1.5rem;color:white;">Geofencing Workflow + Rule Types</h2>
+    </div>
+    <div class="grid grid-cols-2 gap-4">
+      <div class="glass p-5 rounded-2xl flex flex-col gap-3">
+        <div class="section-label">End-to-End Workflow</div>
+        <div class="flex flex-col gap-2">
+          <div class="flex items-center gap-3"><div class="badge-num" style="background:linear-gradient(135deg,#6366f1,#4f46e5);flex-shrink:0;">A</div><div class="flex-1 glass-sm p-2 rounded-lg"><span style="font-size:.75rem;font-weight:600;color:white;">Admin Configures Geofence</span><br/><span style="font-size:11px;color:rgba(255,255,255,.5);">Name, address (auto-geocoded), radius, assign to team/role, define entry/exit rules</span></div></div>
+          <div class="flow-arrow">↓</div>
+          <div class="flex items-center gap-3"><div class="badge-num" style="flex-shrink:0;">B</div><div class="flex-1 glass-sm p-2 rounded-lg"><span style="font-size:.75rem;font-weight:600;color:white;">Geofence Synced to Device</span><br/><span style="font-size:11px;color:rgba(255,255,255,.5);">On app startup: downloads from Supabase → cached in SQLite + Geofence Engine memory</span></div></div>
+          <div class="flow-arrow">↓</div>
+          <div class="flex items-center gap-3"><div class="badge-num" style="background:linear-gradient(135deg,#f59e0b,#d97706);flex-shrink:0;">C</div><div class="flex-1 glass-sm p-2 rounded-lg"><span style="font-size:.75rem;font-weight:600;color:white;">Location Update Received</span><br/><span style="font-size:11px;color:rgba(255,255,255,.5);">Windows Location API → lat/lng every 10 min. Accuracy validated (&lt;100m threshold)</span></div></div>
+          <div class="flow-arrow">↓</div>
+          <div class="flex items-center gap-3"><div class="badge-num" style="background:linear-gradient(135deg,#22c55e,#16a34a);flex-shrink:0;">D</div><div class="flex-1 glass-sm p-2 rounded-lg"><span style="font-size:.75rem;font-weight:600;color:white;">Geofence Check (Local, &lt;5ms)</span><br/><span style="font-size:11px;color:rgba(255,255,255,.5);">Haversine formula (circular) or Ray Casting (polygon). No network call needed.</span></div></div>
+          <div class="flow-arrow">↓</div>
+          <div class="flex items-center gap-3"><div class="badge-num" style="background:linear-gradient(135deg,#f43f5e,#be123c);flex-shrink:0;">E</div><div class="flex-1 glass-sm p-2 rounded-lg"><span style="font-size:.75rem;font-weight:600;color:white;">State Change Detected</span><br/><span style="font-size:11px;color:rgba(255,255,255,.5);">Outside→Inside = ENTRY. Inside→Outside = EXIT. Emit via Tauri IPC + queue for API upload</span></div></div>
+          <div class="flow-arrow">↓</div>
+          <div class="flex items-center gap-3"><div class="badge-num" style="background:linear-gradient(135deg,#14b8a6,#6366f1);flex-shrink:0;">F</div><div class="flex-1 glass-sm p-2 rounded-lg"><span style="font-size:.75rem;font-weight:600;color:white;">Action + Dashboard Update</span><br/><span style="font-size:11px;color:rgba(255,255,255,.5);">Clock-in/out recorded. Alert sent. Manager dashboard updates via Supabase Realtime WebSocket</span></div></div>
+        </div>
+      </div>
+      <div class="flex flex-col gap-3">
+        <div class="glass p-4 rounded-xl">
+          <div class="section-label mb-3">Types of Geofence Rules</div>
+          <div class="flex flex-col gap-2">
+            <div class="glass-sm p-3 rounded-xl flex items-start gap-3"><span style="color:#2dd4bf;flex-shrink:0;">⏰</span><div><div style="font-size:.75rem;font-weight:600;color:white;">Time-Based Rules</div><div style="font-size:11px;color:rgba(255,255,255,.5);">Active only during work hours (9 AM–6 PM). Entry before 9:30 = On-time. After = Late. Weekend = Ignored.</div></div></div>
+            <div class="glass-sm p-3 rounded-xl flex items-start gap-3"><span style="color:#a5b4fc;flex-shrink:0;">👤</span><div><div style="font-size:.75rem;font-weight:600;color:white;">Role-Based Rules</div><div style="font-size:11px;color:rgba(255,255,255,.5);">Managers: flexible. Field staff: strict geofence. WFH staff: network-based detection instead.</div></div></div>
+            <div class="glass-sm p-3 rounded-xl flex items-start gap-3"><span style="color:#fcd34d;flex-shrink:0;">🗺️</span><div><div style="font-size:.75rem;font-weight:600;color:white;">Zone-Based Rules</div><div style="font-size:11px;color:rgba(255,255,255,.5);">Office HQ + Client Site + WFH — each zone triggers different time tracking category.</div></div></div>
+            <div class="glass-sm p-3 rounded-xl flex items-start gap-3"><span style="color:#86efac;flex-shrink:0;">📁</span><div><div style="font-size:.75rem;font-weight:600;color:white;">Project-Based Rules</div><div style="font-size:11px;color:rgba(255,255,255,.5);">Time at a client location → billed to project automatically. Invoice hours auto-calculated.</div></div></div>
+            <div class="glass-sm p-3 rounded-xl flex items-start gap-3"><span style="color:#fda4af;flex-shrink:0;">🏠</span><div><div style="font-size:.75rem;font-weight:600;color:white;">WFH Detection Rule</div><div style="font-size:11px;color:rgba(255,255,255,.5);">No physical geofence needed. Uses: Corp VPN subnet + Home WiFi SSID + IP cross-check.</div></div></div>
+          </div>
+        </div>
+        <div class="glass-teal p-3 rounded-xl">
+          <div style="font-size:.75rem;font-weight:600;color:white;margin-bottom:6px;">🔢 Haversine Algorithm (Rust)</div>
+          <div class="code-block" style="font-size:10px;">
+fn haversine(p1: LatLng, p2: LatLng) -&gt; f64 {
+  let R = <span class="cn">6371000.0</span>; <span class="cc">// Earth radius meters</span>
+  let dlat = (p2.lat - p1.lat).to_radians();
+  let dlng = (p2.lng - p1.lng).to_radians();
+  let a = (dlat/<span class="cn">2.0</span>).sin().powi(<span class="cn">2</span>)
+        + p1.lat.cos() * p2.lat.cos()
+        * (dlng/<span class="cn">2.0</span>).sin().powi(<span class="cn">2</span>);
+  R * <span class="cn">2.0</span> * a.sqrt().atan2((<span class="cn">1.0</span>-a).sqrt())
+}
+<span class="cc">// inside = distance &lt; fence.radius_m</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SLIDE 9 — DATABASE DESIGN ═══ -->
+<div class="slide" id="slide-9">
+  <div class="w-full max-w-6xl mx-auto flex flex-col gap-4 stagger">
+    <div class="flex items-center gap-3">
+      <div class="tag tag-amber">Section 09</div>
+      <h2 style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:1.5rem;color:white;">Database Design — New Tables</h2>
+    </div>
+    <div class="grid grid-cols-3 gap-3">
+      <div class="glass p-4 rounded-xl">
+        <div class="section-label mb-2">📍 location.records</div>
+        <div class="code-block" style="font-size:10px;">
+<span class="ck">id</span>          uuid PRIMARY KEY
+<span class="ck">employee_id</span> uuid NOT NULL
+<span class="ck">org_id</span>      uuid NOT NULL
+<span class="ck">recorded_at</span> timestamptz
+<span class="ck">latitude</span>    float8 <span class="cc">-- 2dp (masked)</span>
+<span class="ck">longitude</span>   float8 <span class="cc">-- 2dp (masked)</span>
+<span class="ck">accuracy</span>    float4 <span class="cc">-- metres</span>
+<span class="ck">source</span>      text   <span class="cc">-- wifi|ip</span>
+<span class="ck">method</span>      text   <span class="cc">-- windows_api</span>
+<span class="ck">is_office</span>   boolean <span class="cc">-- computed</span>
+<span class="ck">geofence_id</span> uuid   <span class="cc">-- if inside one</span>
+
+<span class="cc">-- Partitioned by month
+-- RLS by org_id
+-- Retention: 90 days</span>
+        </div>
+      </div>
+      <div class="glass p-4 rounded-xl">
+        <div class="section-label mb-2">🗺️ geofences</div>
+        <div class="code-block" style="font-size:10px;">
+<span class="ck">id</span>           uuid PRIMARY KEY
+<span class="ck">org_id</span>       uuid NOT NULL
+<span class="ck">name</span>         text  <span class="cc">-- "HQ Office"</span>
+<span class="ck">type</span>         text  <span class="cc">-- circle|polygon</span>
+<span class="ck">center_lat</span>   float8
+<span class="ck">center_lng</span>   float8
+<span class="ck">radius_m</span>     integer <span class="cc">-- circular</span>
+<span class="ck">polygon</span>      jsonb   <span class="cc">-- [[lat,lng],...]</span>
+<span class="ck">is_active</span>    boolean
+<span class="ck">applies_to</span>   text[]  <span class="cc">-- role list</span>
+<span class="ck">rules</span>        jsonb   <span class="cc">-- entry/exit actions</span>
+<span class="ck">created_by</span>   uuid
+<span class="ck">created_at</span>   timestamptz
+
+<span class="cc">-- Soft delete, audit log</span>
+        </div>
+      </div>
+      <div class="glass p-4 rounded-xl">
+        <div class="section-label mb-2">⚡ geofence_events</div>
+        <div class="code-block" style="font-size:10px;">
+<span class="ck">id</span>             uuid PRIMARY KEY
+<span class="ck">employee_id</span>    uuid NOT NULL
+<span class="ck">geofence_id</span>    uuid NOT NULL
+<span class="ck">org_id</span>         uuid NOT NULL
+<span class="ck">event_type</span>     text
+  <span class="cc">-- entry|exit|dwell|no_show</span>
+<span class="ck">occurred_at</span>    timestamptz
+<span class="ck">location_id</span>    uuid <span class="cc">-- FK</span>
+<span class="ck">duration_sec</span>   integer <span class="cc">-- on exit</span>
+<span class="ck">triggered_rule</span> text
+<span class="ck">action_taken</span>   jsonb
+<span class="ck">verified</span>       boolean
+
+<span class="cc">-- Index: (employee_id, occurred_at)
+-- Partitioned by month</span>
+        </div>
+      </div>
+    </div>
+    <div class="grid grid-cols-2 gap-3">
+      <div class="glass p-4 rounded-xl">
+        <div class="section-label mb-2">🏁 attendance_sessions (Enhanced)</div>
+        <div class="grid grid-cols-2 gap-2">
+          <div class="code-block" style="font-size:10px;">
+<span class="ck">id</span>               uuid PRIMARY KEY
+<span class="ck">employee_id</span>      uuid NOT NULL
+<span class="ck">date</span>             date
+<span class="ck">clock_in</span>         timestamptz
+<span class="ck">clock_out</span>        timestamptz
+<span class="ck">clock_in_method</span>  text
+  <span class="cc">-- geofence | manual</span>
+<span class="ck">clock_in_geo_id</span>  uuid
+<span class="ck">work_mode</span>        text
+  <span class="cc">-- office|wfh|client</span>
+          </div>
+          <div class="flex flex-col gap-2">
+            <div class="glass-sm p-2 rounded" style="font-size:11px;"><span style="color:white;font-weight:600;">Auto Clock-In:</span><br/><span style="color:rgba(255,255,255,.5);">Triggered by ENTRY geofence event</span></div>
+            <div class="glass-sm p-2 rounded" style="font-size:11px;"><span style="color:white;font-weight:600;">Auto Clock-Out:</span><br/><span style="color:rgba(255,255,255,.5);">Triggered by EXIT geofence event</span></div>
+            <div class="glass-sm p-2 rounded" style="font-size:11px;"><span style="color:white;font-weight:600;">Work Mode:</span><br/><span style="color:rgba(255,255,255,.5);">Set by which geofence triggered entry</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="glass p-4 rounded-xl">
+        <div class="section-label mb-3">Key Design Decisions</div>
+        <div class="flex flex-col gap-2">
+          <div class="flex items-start gap-2"><span style="color:#2dd4bf;flex-shrink:0;">→</span><span style="font-size:11px;color:rgba(255,255,255,.6);"><strong class="text-white">Row-Level Security</strong> — employees can only read own location data</span></div>
+          <div class="flex items-start gap-2"><span style="color:#2dd4bf;flex-shrink:0;">→</span><span style="font-size:11px;color:rgba(255,255,255,.6);"><strong class="text-white">Partitioned by month</strong> — fast queries, easy retention management</span></div>
+          <div class="flex items-start gap-2"><span style="color:#2dd4bf;flex-shrink:0;">→</span><span style="font-size:11px;color:rgba(255,255,255,.6);"><strong class="text-white">Coordinate masking</strong> — lat/lng stored to 2 decimal places (±1km privacy)</span></div>
+          <div class="flex items-start gap-2"><span style="color:#2dd4bf;flex-shrink:0;">→</span><span style="font-size:11px;color:rgba(255,255,255,.6);"><strong class="text-white">Server-side re-validation</strong> — all geofence events verified on backend too</span></div>
+          <div class="flex items-start gap-2"><span style="color:#2dd4bf;flex-shrink:0;">→</span><span style="font-size:11px;color:rgba(255,255,255,.6);"><strong class="text-white">90-day auto-purge</strong> — cron job deletes raw location data after 3 months</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SLIDE 10 — SECURITY & PRIVACY ═══ -->
+<div class="slide" id="slide-10">
+  <div class="w-full max-w-6xl mx-auto flex flex-col gap-4 stagger">
+    <div class="flex items-center gap-3">
+      <div class="tag tag-rose">Section 10</div>
+      <h2 style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:1.5rem;color:white;">Security, Privacy &amp; Compliance</h2>
+    </div>
+    <div class="grid grid-cols-3 gap-4">
+      <div class="glass p-4 rounded-xl">
+        <div class="flex items-center gap-2 mb-3"><span style="font-size:1.2rem;">🔐</span><span style="font-size:.85rem;font-weight:600;color:white;">Consent-First Architecture</span></div>
+        <div class="flex flex-col gap-2" style="font-size:11px;color:rgba(255,255,255,.6);line-height:1.6;">
+          <div><span class="yes">✓</span> Explicit consent required before any location data collected</div>
+          <div><span class="yes">✓</span> Employee can view their own collected location data anytime</div>
+          <div><span class="yes">✓</span> Consent revocation = immediate stop (&lt;100ms, same session)</div>
+          <div><span class="yes">✓</span> Work hours only — no collection on weekends or holidays</div>
+          <div><span class="yes">✓</span> Consent audit log — who consented, when, and what for</div>
+          <div><span class="yes">✓</span> Manager sees binary "In Office / Remote" — not GPS coordinates</div>
+        </div>
+      </div>
+      <div class="glass p-4 rounded-xl">
+        <div class="flex items-center gap-2 mb-3"><span style="font-size:1.2rem;">🛡️</span><span style="font-size:.85rem;font-weight:600;color:white;">Data Minimization</span></div>
+        <div class="flex flex-col gap-3">
+          <div class="glass-sm p-2 rounded-lg"><div style="font-size:.7rem;font-weight:600;color:white;margin-bottom:2px;">Coordinate Masking</div><div style="font-size:11px;color:rgba(255,255,255,.5);">Store lat/lng to 2 decimal places only. Precision = ±1km (not exact home/office address)</div></div>
+          <div class="glass-sm p-2 rounded-lg"><div style="font-size:.7rem;font-weight:600;color:white;margin-bottom:2px;">90-Day Auto-Purge</div><div style="font-size:11px;color:rgba(255,255,255,.5);">Raw records deleted after 3 months. Only aggregated summaries kept long-term</div></div>
+          <div class="glass-sm p-2 rounded-lg"><div style="font-size:.7rem;font-weight:600;color:white;margin-bottom:2px;">No Background Tracking</div><div style="font-size:11px;color:rgba(255,255,255,.5);">Location collected ONLY when work shift is active. Zero collection off-hours</div></div>
+          <div class="glass-sm p-2 rounded-lg"><div style="font-size:.7rem;font-weight:600;color:white;margin-bottom:2px;">Purpose Limitation</div><div style="font-size:11px;color:rgba(255,255,255,.5);">Data used only for attendance. No resale, no third-party sharing, no profiling</div></div>
+        </div>
+      </div>
+      <div class="glass p-4 rounded-xl">
+        <div class="flex items-center gap-2 mb-3"><span style="font-size:1.2rem;">⚖️</span><span style="font-size:.85rem;font-weight:600;color:white;">Compliance Checklist</span></div>
+        <div class="flex flex-col gap-1">
+          <div class="flex items-center justify-between py-1" style="border-bottom:1px solid rgba(255,255,255,.05);"><span style="font-size:11px;color:rgba(255,255,255,.6);">GDPR Article 5 (Purpose Limitation)</span><div class="tag tag-green" style="font-size:9px;padding:1px 6px;">✓ Met</div></div>
+          <div class="flex items-center justify-between py-1" style="border-bottom:1px solid rgba(255,255,255,.05);"><span style="font-size:11px;color:rgba(255,255,255,.6);">IT Act 2000 (India)</span><div class="tag tag-green" style="font-size:9px;padding:1px 6px;">✓ Met</div></div>
+          <div class="flex items-center justify-between py-1" style="border-bottom:1px solid rgba(255,255,255,.05);"><span style="font-size:11px;color:rgba(255,255,255,.6);">PDPB / DPDP 2023 (India)</span><div class="tag tag-amber" style="font-size:9px;padding:1px 6px;">Review</div></div>
+          <div class="flex items-center justify-between py-1" style="border-bottom:1px solid rgba(255,255,255,.05);"><span style="font-size:11px;color:rgba(255,255,255,.6);">TLS 1.3 Encryption in Transit</span><div class="tag tag-green" style="font-size:9px;padding:1px 6px;">✓ Met</div></div>
+          <div class="flex items-center justify-between py-1" style="border-bottom:1px solid rgba(255,255,255,.05);"><span style="font-size:11px;color:rgba(255,255,255,.6);">AES-256 Encryption at Rest</span><div class="tag tag-green" style="font-size:9px;padding:1px 6px;">✓ Met</div></div>
+          <div class="flex items-center justify-between py-1" style="border-bottom:1px solid rgba(255,255,255,.05);"><span style="font-size:11px;color:rgba(255,255,255,.6);">Employee Data Erasure (Right to Delete)</span><div class="tag tag-green" style="font-size:9px;padding:1px 6px;">✓ Built-in</div></div>
+          <div class="flex items-center justify-between py-1"><span style="font-size:11px;color:rgba(255,255,255,.6);">Full Audit Log (all data access)</span><div class="tag tag-green" style="font-size:9px;padding:1px 6px;">✓ Met</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="glass p-4 rounded-xl">
+      <div class="section-label mb-3">Security Layer Stack</div>
+      <div class="flex gap-3">
+        <div class="flex-1 glass-sm p-3 rounded-xl text-center"><div style="font-size:1.1rem;">🔒</div><div style="font-size:.7rem;font-weight:600;color:white;margin-top:3px;">Transport</div><div style="font-size:10px;color:rgba(255,255,255,.38);">TLS 1.3 + HSTS</div></div>
+        <div class="flex-1 glass-sm p-3 rounded-xl text-center"><div style="font-size:1.1rem;">🗝️</div><div style="font-size:.7rem;font-weight:600;color:white;margin-top:3px;">Auth</div><div style="font-size:10px;color:rgba(255,255,255,.38);">JWT + RLS policies</div></div>
+        <div class="flex-1 glass-sm p-3 rounded-xl text-center"><div style="font-size:1.1rem;">💾</div><div style="font-size:.7rem;font-weight:600;color:white;margin-top:3px;">Storage</div><div style="font-size:10px;color:rgba(255,255,255,.38);">AES-256 at rest</div></div>
+        <div class="flex-1 glass-sm p-3 rounded-xl text-center"><div style="font-size:1.1rem;">👁️</div><div style="font-size:.7rem;font-weight:600;color:white;margin-top:3px;">Access Control</div><div style="font-size:10px;color:rgba(255,255,255,.38);">Row-Level Security</div></div>
+        <div class="flex-1 glass-sm p-3 rounded-xl text-center"><div style="font-size:1.1rem;">📋</div><div style="font-size:.7rem;font-weight:600;color:white;margin-top:3px;">Audit Trail</div><div style="font-size:10px;color:rgba(255,255,255,.38);">All access logged</div></div>
+        <div class="flex-1 glass-sm p-3 rounded-xl text-center"><div style="font-size:1.1rem;">🗑️</div><div style="font-size:.7rem;font-weight:600;color:white;margin-top:3px;">Retention</div><div style="font-size:10px;color:rgba(255,255,255,.38);">90-day auto-purge</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SLIDE 11 — OFFLINE + PERFORMANCE ═══ -->
+<div class="slide" id="slide-11">
+  <div class="w-full max-w-6xl mx-auto flex flex-col gap-4 stagger">
+    <div class="flex items-center gap-3">
+      <div class="tag tag-teal">Section 11</div>
+      <h2 style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:1.5rem;color:white;">Offline Mode + Performance Analysis</h2>
+    </div>
+    <div class="grid grid-cols-2 gap-4">
+      <div class="flex flex-col gap-3">
+        <div class="glass p-5 rounded-2xl">
+          <div class="flex items-center gap-2 mb-4"><span style="font-size:1.1rem;">📶</span><span style="font-size:.85rem;font-weight:600;color:white;">Offline Mode — SQLite Buffer Strategy</span></div>
+          <div class="flex flex-col gap-3">
+            <div class="flex items-start gap-3"><div style="width:22px;height:22px;border-radius:50%;background:rgba(20,184,166,.2);border:1px solid rgba(20,184,166,.4);display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;">1</div><div><div style="font-size:.75rem;font-weight:600;color:white;">Network Lost</div><div style="font-size:11px;color:rgba(255,255,255,.5);">Sync engine detects connection failure. Switches to offline mode automatically. Zero interruption.</div></div></div>
+            <div class="flex items-start gap-3"><div style="width:22px;height:22px;border-radius:50%;background:rgba(20,184,166,.2);border:1px solid rgba(20,184,166,.4);display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;">2</div><div><div style="font-size:.75rem;font-weight:600;color:white;">Local Buffer Active</div><div style="font-size:11px;color:rgba(255,255,255,.5);">All location records + geofence events written to SQLite. Geofence checks continue locally (no network needed).</div></div></div>
+            <div class="flex items-start gap-3"><div style="width:22px;height:22px;border-radius:50%;background:rgba(20,184,166,.2);border:1px solid rgba(20,184,166,.4);display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;">3</div><div><div style="font-size:.75rem;font-weight:600;color:white;">Network Restored</div><div style="font-size:11px;color:rgba(255,255,255,.5);">Sync engine detects connectivity. Uploads buffered records in batches (max 500 events/request).</div></div></div>
+            <div class="flex items-start gap-3"><div style="width:22px;height:22px;border-radius:50%;background:rgba(20,184,166,.2);border:1px solid rgba(20,184,166,.4);display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;">4</div><div><div style="font-size:.75rem;font-weight:600;color:white;">Zero Data Loss</div><div style="font-size:11px;color:rgba(255,255,255,.5);">SQLite WAL mode: concurrent reads/writes. Can buffer 72+ hours before storage concern.</div></div></div>
+          </div>
+        </div>
+        <div class="glass-teal p-3 rounded-xl">
+          <div style="font-size:.75rem;font-weight:600;color:white;margin-bottom:6px;">Retry Strategy</div>
+          <div class="code-block" style="font-size:10px;">
+Attempt 1 → Wait <span class="cn">1s</span>  → Retry
+Attempt 2 → Wait <span class="cn">2s</span>  → Retry
+Attempt 3 → Wait <span class="cn">4s</span>  → Buffer locally
+<span class="cc">// Exponential backoff, max 3 retries</span>
+Max batch: <span class="cn">500</span> events / request
+Rate limit: <span class="cn">10</span> batches / second
+          </div>
+        </div>
+        <div class="grid grid-cols-3 gap-3">
+          <div class="glass-sm p-3 rounded-xl text-center"><div style="font-size:1.4rem;font-weight:800;color:white;font-family:'Space Grotesk',sans-serif;">72h+</div><div style="font-size:10px;color:rgba(255,255,255,.4);">Offline buffer capacity</div></div>
+          <div class="glass-sm p-3 rounded-xl text-center"><div style="font-size:1.4rem;font-weight:800;color:#14b8a6;font-family:'Space Grotesk',sans-serif;">&lt;1%</div><div style="font-size:10px;color:rgba(255,255,255,.4);">CPU usage</div></div>
+          <div class="glass-sm p-3 rounded-xl text-center"><div style="font-size:1.4rem;font-weight:800;color:#6366f1;font-family:'Space Grotesk',sans-serif;">WAL</div><div style="font-size:10px;color:rgba(255,255,255,.4);">SQLite mode</div></div>
+        </div>
+      </div>
+      <div class="flex flex-col gap-4">
+        <div class="glass p-5 rounded-2xl">
+          <div class="flex items-center gap-2 mb-4"><span style="font-size:1.1rem;">⚡</span><span style="font-size:.85rem;font-weight:600;color:white;">Performance Targets</span></div>
+          <div class="flex flex-col gap-4">
+            <div><div class="flex justify-between mb-1"><span style="font-size:11px;color:rgba(255,255,255,.6);">Geofence check latency</span><span style="font-size:.8rem;color:#2dd4bf;font-weight:700;">&lt; 5 ms</span></div><div class="acc-bar"><div class="acc-fill" id="perf1" style="width:0%;background:linear-gradient(90deg,#14b8a6,#0d9488);"></div></div></div>
+            <div><div class="flex justify-between mb-1"><span style="font-size:11px;color:rgba(255,255,255,.6);">Background CPU overhead</span><span style="font-size:.8rem;color:#86efac;font-weight:700;">&lt; 1%</span></div><div class="acc-bar"><div class="acc-fill" id="perf2" style="width:0%;background:linear-gradient(90deg,#22c55e,#16a34a);"></div></div></div>
+            <div><div class="flex justify-between mb-1"><span style="font-size:11px;color:rgba(255,255,255,.6);">Windows Location API call cost</span><span style="font-size:.8rem;color:#fcd34d;font-weight:700;">&lt; 2 ms</span></div><div class="acc-bar"><div class="acc-fill" id="perf3" style="width:0%;background:linear-gradient(90deg,#f59e0b,#d97706);"></div></div></div>
+            <div><div class="flex justify-between mb-1"><span style="font-size:11px;color:rgba(255,255,255,.6);">Location capture interval</span><span style="font-size:.8rem;color:#a5b4fc;font-weight:700;">10 min</span></div><div class="acc-bar"><div class="acc-fill" id="perf4" style="width:0%;background:linear-gradient(90deg,#6366f1,#4f46e5);"></div></div></div>
+          </div>
+        </div>
+        <div class="glass-sm p-4 rounded-xl">
+          <div class="section-label mb-2">Accuracy Confidence Tiers</div>
+          <table class="pres-table">
+            <thead><tr><th>Source</th><th>Accuracy</th><th>Use For</th></tr></thead>
+            <tbody>
+              <tr><td>Windows Location API (WiFi)</td><td style="color:#2dd4bf;">±15–40 m</td><td style="color:#86efac;">✓ Geofencing</td></tr>
+              <tr><td>IP Geolocation</td><td style="color:#fcd34d;">±5–50 km</td><td style="color:#fcd34d;">Country/city only</td></tr>
+              <tr><td>Corp Network Detection</td><td style="color:#a5b4fc;">Binary</td><td style="color:#2dd4bf;">✓ In-office confirm</td></tr>
+              <tr><td>BLE Beacons (Phase 2)</td><td style="color:#86efac;">±1–3 m</td><td style="color:#86efac;">✓ Desk-level</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SLIDE 12 — ROADMAP ═══ -->
+<div class="slide" id="slide-12">
+  <div class="w-full max-w-6xl mx-auto flex flex-col gap-4 stagger">
+    <div class="flex items-center gap-3">
+      <div class="tag tag-indigo">Section 12</div>
+      <h2 style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:1.5rem;color:white;">Implementation Roadmap — 3 Phases, 6 Weeks</h2>
+    </div>
+    <div class="grid grid-cols-3 gap-4">
+      <div class="phase-card ph1">
+        <div class="flex items-center justify-between mb-3"><div><div style="font-size:.7rem;font-weight:800;color:#14b8a6;letter-spacing:.08em;">PHASE 1</div><div style="font-size:1rem;font-weight:700;color:white;">Foundation</div></div><div class="tag tag-teal">Week 1–2</div></div>
+        <div class="flex flex-col gap-2">
+          <div class="glass-sm p-2 rounded-lg"><div style="font-size:.7rem;font-weight:600;color:white;margin-bottom:2px;">🦀 Rust Backend</div><div style="font-size:11px;color:rgba(255,255,255,.5);">• location_module.rs (Windows Location API)<br/>• geofence_engine.rs (Haversine + Ray Casting)<br/>• location_sync.rs (batch upload)</div></div>
+          <div class="glass-sm p-2 rounded-lg"><div style="font-size:.7rem;font-weight:600;color:white;margin-bottom:2px;">🗄️ Database</div><div style="font-size:11px;color:rgba(255,255,255,.5);">• location.records table<br/>• geofences table<br/>• geofence_events table<br/>• RLS policies + indexes</div></div>
+          <div class="glass-sm p-2 rounded-lg"><div style="font-size:.7rem;font-weight:600;color:white;margin-bottom:2px;">☁️ Edge Functions</div><div style="font-size:11px;color:rgba(255,255,255,.5);">• ingest-location<br/>• process-geofence-event<br/>• Basic alert dispatch</div></div>
+        </div>
+        <div class="mt-3 p-2 rounded-lg" style="background:rgba(20,184,166,.08);border:1px solid rgba(20,184,166,.15);font-size:10px;color:#2dd4bf;font-weight:600;">✓ WiFi location capture + circular geofence working end-to-end</div>
+      </div>
+      <div class="phase-card ph2">
+        <div class="flex items-center justify-between mb-3"><div><div style="font-size:.7rem;font-weight:800;color:#6366f1;letter-spacing:.08em;">PHASE 2</div><div style="font-size:1rem;font-weight:700;color:white;">Dashboard + Admin</div></div><div class="tag tag-indigo">Week 3–4</div></div>
+        <div class="flex flex-col gap-2">
+          <div class="glass-sm p-2 rounded-lg"><div style="font-size:.7rem;font-weight:600;color:white;margin-bottom:2px;">⚛️ React UI</div><div style="font-size:11px;color:rgba(255,255,255,.5);">• LocationMap component<br/>• Geofence status indicators<br/>• Employee presence by location<br/>• Movement timeline view</div></div>
+          <div class="glass-sm p-2 rounded-lg"><div style="font-size:.7rem;font-weight:600;color:white;margin-bottom:2px;">🔧 Admin Panel</div><div style="font-size:11px;color:rgba(255,255,255,.5);">• Geofence create/edit/delete UI<br/>• Address geocoding (auto)<br/>• Assign to teams/roles<br/>• Rule configuration UI</div></div>
+          <div class="glass-sm p-2 rounded-lg"><div style="font-size:.7rem;font-weight:600;color:white;margin-bottom:2px;">🔔 Alerts System</div><div style="font-size:11px;color:rgba(255,255,255,.5);">• Late arrival + no-show detection<br/>• Email + in-app notifications<br/>• Auto attendance from geofence</div></div>
+        </div>
+        <div class="mt-3 p-2 rounded-lg" style="background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.15);font-size:10px;color:#a5b4fc;font-weight:600;">✓ Manager dashboard + admin config + attendance automation</div>
+      </div>
+      <div class="phase-card ph3">
+        <div class="flex items-center justify-between mb-3"><div><div style="font-size:.7rem;font-weight:800;color:#f59e0b;letter-spacing:.08em;">PHASE 3</div><div style="font-size:1rem;font-weight:700;color:white;">Advanced Features</div></div><div class="tag tag-amber">Week 5–6</div></div>
+        <div class="flex flex-col gap-2">
+          <div class="glass-sm p-2 rounded-lg"><div style="font-size:.7rem;font-weight:600;color:white;margin-bottom:2px;">🔵 BLE Beacons</div><div style="font-size:11px;color:rgba(255,255,255,.5);">• Bluetooth beacon detection<br/>• Desk-level location (±1–3m)<br/>• SEPIA floor plan integration<br/>• Auto desk assignment</div></div>
+          <div class="glass-sm p-2 rounded-lg"><div style="font-size:.7rem;font-weight:600;color:white;margin-bottom:2px;">📊 Analytics</div><div style="font-size:11px;color:rgba(255,255,255,.5);">• Office attendance trends<br/>• WFH vs in-office ratios<br/>• Location-based productivity<br/>• Real estate utilization</div></div>
+          <div class="glass-sm p-2 rounded-lg"><div style="font-size:.7rem;font-weight:600;color:white;margin-bottom:2px;">🔶 Polygon Geofences</div><div style="font-size:11px;color:rgba(255,255,255,.5);">• Draw custom shapes on map<br/>• Campus/multi-zone support<br/>• Dynamic project-based fences</div></div>
+        </div>
+        <div class="mt-3 p-2 rounded-lg" style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.15);font-size:10px;color:#fcd34d;font-weight:600;">✓ BLE indoor positioning + analytics + polygon geofencing</div>
+      </div>
+    </div>
+    <div class="glass p-4 rounded-xl">
+      <div class="section-label mb-2">6-Week Timeline</div>
+      <div class="flex gap-2">
+        <div class="flex-1 h-8 rounded-lg flex items-center justify-center text-xs font-semibold" style="background:rgba(20,184,166,.2);border:1px solid rgba(20,184,166,.3);color:#2dd4bf;">Week 1 — Rust Modules</div>
+        <div class="flex-1 h-8 rounded-lg flex items-center justify-center text-xs font-semibold" style="background:rgba(20,184,166,.15);border:1px solid rgba(20,184,166,.25);color:#2dd4bf;">Week 2 — DB + Edge Fns</div>
+        <div class="flex-1 h-8 rounded-lg flex items-center justify-center text-xs font-semibold" style="background:rgba(99,102,241,.2);border:1px solid rgba(99,102,241,.3);color:#a5b4fc;">Week 3 — React UI</div>
+        <div class="flex-1 h-8 rounded-lg flex items-center justify-center text-xs font-semibold" style="background:rgba(99,102,241,.15);border:1px solid rgba(99,102,241,.25);color:#a5b4fc;">Week 4 — Admin + Alerts</div>
+        <div class="flex-1 h-8 rounded-lg flex items-center justify-center text-xs font-semibold" style="background:rgba(245,158,11,.2);border:1px solid rgba(245,158,11,.3);color:#fcd34d;">Week 5 — BLE + Analytics</div>
+        <div class="flex-1 h-8 rounded-lg flex items-center justify-center text-xs font-semibold" style="background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.25);color:#fcd34d;">Week 6 — QA + Polish</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SLIDE 13 — RECOMMENDATION ═══ -->
+<div class="slide" id="slide-13">
+  <div class="w-full max-w-6xl mx-auto flex flex-col gap-4 stagger">
+    <div class="flex items-center gap-3">
+      <div class="tag tag-amber">Section 13</div>
+      <h2 style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:1.5rem;color:white;">Pros, Cons, Risks &amp; Final Recommendation</h2>
+    </div>
+    <div class="grid grid-cols-3 gap-4">
+      <div class="glass p-4 rounded-xl" style="border-color:rgba(34,197,94,.2);">
+        <div class="flex items-center gap-2 mb-3"><div style="width:8px;height:8px;border-radius:50%;background:#22c55e;box-shadow:0 0 8px #22c55e;flex-shrink:0;"></div><span style="font-size:.85rem;font-weight:600;color:white;">Pros — Why Build It</span></div>
+        <div style="font-size:11px;color:rgba(255,255,255,.65);line-height:1.75;">
+          <div><span class="yes">✓</span> Auto attendance — eliminates manual clock-in errors</div>
+          <div><span class="yes">✓</span> WFH vs office — clear distinction for hybrid teams</div>
+          <div><span class="yes">✓</span> Payroll accuracy — location-verified hours = accurate billing</div>
+          <div><span class="yes">✓</span> Compliance proof — employee was at site for audit</div>
+          <div><span class="yes">✓</span> Real-time alerts — late arrival, no-show, early exit</div>
+          <div><span class="yes">✓</span> Floor plan integration — SEPIA already has virtual office</div>
+          <div><span class="yes">✓</span> Competitive parity — Hubstaff &amp; Teramind already have this</div>
+          <div><span class="yes">✓</span> Low implementation cost — WiFi-based, no extra hardware Phase 1</div>
+        </div>
+      </div>
+      <div class="glass p-4 rounded-xl" style="border-color:rgba(244,63,94,.2);">
+        <div class="flex items-center gap-2 mb-3"><div style="width:8px;height:8px;border-radius:50%;background:#f43f5e;box-shadow:0 0 8px #f43f5e;flex-shrink:0;"></div><span style="font-size:.85rem;font-weight:600;color:white;">Cons &amp; Risks</span></div>
+        <div style="font-size:11px;color:rgba(255,255,255,.65);line-height:1.75;">
+          <div><span class="no">✗</span> Privacy concerns — employees may feel surveilled</div>
+          <div><span class="no">✗</span> WiFi accuracy ±40m — may trigger false geofence events</div>
+          <div><span class="no">✗</span> BLE hardware cost — beacon installation needed for Phase 2</div>
+          <div><span class="no">✗</span> VPN breaks IP fallback — remote workers show wrong city</div>
+          <div><span class="no">✗</span> No true GPS on desktop — WiFi positioning is a substitute</div>
+          <div><span class="no">✗</span> Employee pushback risk — adoption if not communicated well</div>
+          <div><span class="no">✗</span> Windows-only Phase 1 — macOS/Linux need separate APIs</div>
+        </div>
+      </div>
+      <div class="glass p-4 rounded-xl" style="border-color:rgba(245,158,11,.2);">
+        <div class="flex items-center gap-2 mb-3"><div style="width:8px;height:8px;border-radius:50%;background:#f59e0b;box-shadow:0 0 8px #f59e0b;flex-shrink:0;"></div><span style="font-size:.85rem;font-weight:600;color:white;">Risk Mitigations</span></div>
+        <div class="flex flex-col gap-2">
+          <div class="glass-sm p-2 rounded-lg"><div style="font-size:.65rem;font-weight:700;color:#fcd34d;margin-bottom:2px;">Privacy Risk</div><div style="font-size:11px;color:rgba(255,255,255,.5);">Show employees their own data. Binary reporting (in-office/not). Work hours only. Consent-first.</div></div>
+          <div class="glass-sm p-2 rounded-lg"><div style="font-size:.65rem;font-weight:700;color:#fcd34d;margin-bottom:2px;">WiFi Accuracy Risk</div><div style="font-size:11px;color:rgba(255,255,255,.5);">Use larger radius (300m+). Add 5-min dwell before clock-in. Corp network detection as primary.</div></div>
+          <div class="glass-sm p-2 rounded-lg"><div style="font-size:.65rem;font-weight:700;color:#fcd34d;margin-bottom:2px;">Employee Pushback Risk</div><div style="font-size:11px;color:rgba(255,255,255,.5);">Clear consent flow. Opt-out available. Transparent company policy. Employee FAQ.</div></div>
+          <div class="glass-sm p-2 rounded-lg"><div style="font-size:.65rem;font-weight:700;color:#fcd34d;margin-bottom:2px;">VPN Risk</div><div style="font-size:11px;color:rgba(255,255,255,.5);">Detect corporate VPN subnet → mark as "Remote/WFH" (not wrong city). Network-first detection.</div></div>
+        </div>
+      </div>
+    </div>
+    <!-- Final Recommendation -->
+    <div class="rounded-2xl p-5" style="background:linear-gradient(135deg,rgba(20,184,166,.1),rgba(99,102,241,.08));border:1px solid rgba(20,184,166,.3);">
+      <div class="flex items-start gap-4">
+        <div style="font-size:2rem;flex-shrink:0;">🏛️</div>
+        <div>
+          <div style="font-size:.875rem;font-weight:700;color:white;margin-bottom:6px;">Architect's Final Recommendation</div>
+          <p style="font-size:.875rem;line-height:1.65;color:rgba(255,255,255,.75);">
+            <strong style="color:#2dd4bf;">Proceed with implementation.</strong> Start with <strong class="text-white">Phase 1 — WiFi Positioning + Corporate Network Detection + Circular Geofencing</strong>. This covers 80% of the use case with zero hardware cost. The consent-first architecture and binary reporting ensures privacy compliance out of the box.
+          </p>
+          <p style="font-size:.8rem;line-height:1.6;color:rgba(255,255,255,.5);margin-top:8px;">
+            Phase 2 (BLE Beacons) should be gated on client demand — not all organizations need desk-level precision. Phase 3 analytics provide long-term differentiation against Hubstaff, Teramind, and other competitors.
+          </p>
+          <div class="flex flex-wrap gap-2 mt-3">
+            <div class="tag tag-green">✓ Approved for Phase 1</div>
+            <div class="tag tag-amber">⏳ Phase 2 — On Client Demand</div>
+            <div class="tag tag-indigo">📈 Phase 3 — Future Roadmap</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SLIDE 14 — WINDOWS LOCATION API MULTI-SOURCE FUSION ═══ -->
+<div class="slide" id="slide-14">
+  <div class="w-full max-w-6xl mx-auto flex flex-col gap-4 stagger">
+    <div class="flex items-center gap-3">
+      <div class="tag tag-teal">Section 14</div>
+      <h2 style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:1.5rem;color:white;">Windows Location API — Multi-Source Fusion</h2>
+      <div class="tag tag-green">💡 New Insight</div>
+    </div>
+
+    <!-- Hero insight -->
+    <div class="rounded-2xl p-5 flex items-start gap-5" style="background:linear-gradient(135deg,rgba(20,184,166,.12),rgba(99,102,241,.08));border:1px solid rgba(20,184,166,.35);">
+      <div style="font-size:2.5rem;flex-shrink:0;">🔑</div>
+      <div>
+        <div style="font-size:1rem;font-weight:700;color:white;margin-bottom:6px;">Key Insight — Windows Location API is NOT just WiFi!</div>
+        <p style="font-size:.875rem;color:rgba(255,255,255,.7);line-height:1.65;">
+          Jab <strong style="color:#2dd4bf;">Location Services ON</strong> hoti hai laptop mein (jaisa tumhare screenshot mein tha), Windows <strong class="text-white">automatically sabse accurate available source combine</strong> karta hai — WiFi + Network + GPS chip (agar ho) — aur best possible location deta hai. Yeh exactly delivery apps jaise Swiggy/Zomato ka logic hai!
+        </p>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-2 gap-4">
+      <!-- Left: Fusion diagram -->
+      <div class="flex flex-col gap-3">
+        <div class="glass p-5 rounded-2xl">
+          <div class="section-label mb-4">Windows Location API — Internal Fusion Logic</div>
+
+          <!-- Source 1: WiFi -->
+          <div class="flex items-center gap-3 mb-3">
+            <div style="width:36px;height:36px;border-radius:10px;background:rgba(20,184,166,.18);border:1px solid rgba(20,184,166,.4);display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;">📶</div>
+            <div class="flex-1">
+              <div class="flex justify-between mb-1">
+                <span style="font-size:.75rem;font-weight:600;color:white;">WiFi Positioning</span>
+                <span style="font-size:.7rem;color:#2dd4bf;font-weight:700;">±15–40m</span>
+              </div>
+              <div class="acc-bar"><div class="acc-fill" id="f1" style="width:0%;background:linear-gradient(90deg,#14b8a6,#0d9488);"></div></div>
+              <div style="font-size:10px;color:rgba(255,255,255,.4);margin-top:2px;">Nearby WiFi SSIDs → Google/Microsoft DB match</div>
+            </div>
+          </div>
+
+          <!-- Source 2: Network/IP -->
+          <div class="flex items-center gap-3 mb-3">
+            <div style="width:36px;height:36px;border-radius:10px;background:rgba(99,102,241,.18);border:1px solid rgba(99,102,241,.4);display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;">🌐</div>
+            <div class="flex-1">
+              <div class="flex justify-between mb-1">
+                <span style="font-size:.75rem;font-weight:600;color:white;">Network / IP Data</span>
+                <span style="font-size:.7rem;color:#a5b4fc;font-weight:700;">±5–50km</span>
+              </div>
+              <div class="acc-bar"><div class="acc-fill" id="f2" style="width:0%;background:linear-gradient(90deg,#6366f1,#4f46e5);"></div></div>
+              <div style="font-size:10px;color:rgba(255,255,255,.4);margin-top:2px;">Public IP → City/region level (fallback only)</div>
+            </div>
+          </div>
+
+          <!-- Source 3: GPS chip -->
+          <div class="flex items-center gap-3 mb-4">
+            <div style="width:36px;height:36px;border-radius:10px;background:rgba(245,158,11,.18);border:1px solid rgba(245,158,11,.4);display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;">🛰️</div>
+            <div class="flex-1">
+              <div class="flex justify-between mb-1">
+                <span style="font-size:.75rem;font-weight:600;color:white;">GPS Chip (if hardware present)</span>
+                <span style="font-size:.7rem;color:#fcd34d;font-weight:700;">±3–5m</span>
+              </div>
+              <div class="acc-bar"><div class="acc-fill" id="f3" style="width:0%;background:linear-gradient(90deg,#f59e0b,#d97706);"></div></div>
+              <div style="font-size:10px;color:rgba(255,255,255,.4);margin-top:2px;">Surface Pro LTE / some premium laptops mein hota hai</div>
+            </div>
+          </div>
+
+          <!-- Arrow -->
+          <div class="flex items-center gap-3 my-2">
+            <div class="flex-1 h-px" style="background:linear-gradient(90deg,transparent,rgba(20,184,166,.4));"></div>
+            <div style="font-size:1.2rem;">⬇️</div>
+            <div class="flex-1 h-px" style="background:linear-gradient(90deg,rgba(20,184,166,.4),transparent);"></div>
+          </div>
+
+          <!-- Result -->
+          <div class="rounded-xl p-3 flex items-center gap-3" style="background:linear-gradient(135deg,rgba(20,184,166,.15),rgba(99,102,241,.1));border:1px solid rgba(20,184,166,.4);">
+            <div style="font-size:1.5rem;">✨</div>
+            <div>
+              <div style="font-size:.8rem;font-weight:700;color:white;">Windows Location API Result</div>
+              <div style="font-size:11px;color:rgba(255,255,255,.6);">Sabse accurate available source automatically use hota hai. SEPIA ko manually choose nahi karna — Windows khud handle karta hai!</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Delivery boy comparison + laptop screenshot context -->
+      <div class="flex flex-col gap-3">
+
+        <!-- Delivery boy comparison -->
+        <div class="glass p-4 rounded-2xl">
+          <div class="section-label mb-3">📦 Delivery App vs SEPIA — Same Logic!</div>
+          <div class="grid grid-cols-2 gap-3">
+            <div class="glass-sm p-3 rounded-xl">
+              <div style="font-size:.75rem;font-weight:700;color:#fcd34d;margin-bottom:6px;">📱 Swiggy / Zomato Delivery Boy</div>
+              <div style="font-size:11px;color:rgba(255,255,255,.55);line-height:1.75;">
+                <span style="color:#86efac;">✓</span> GPS Chip (satellite)<br/>
+                <span style="color:#86efac;">✓</span> WiFi Positioning<br/>
+                <span style="color:#86efac;">✓</span> Cell Tower (network)<br/>
+                <span style="color:#86efac;">✓</span> All 3 combined<br/>
+                <strong style="color:#fcd34d;">Result: ±2–5 meter accuracy</strong>
+              </div>
+            </div>
+            <div class="glass-sm p-3 rounded-xl" style="border-color:rgba(20,184,166,.3);">
+              <div style="font-size:.75rem;font-weight:700;color:#2dd4bf;margin-bottom:6px;">💻 SEPIA Desktop App</div>
+              <div style="font-size:11px;color:rgba(255,255,255,.55);line-height:1.75;">
+                <span style="color:#fda4af;">✗</span> GPS Chip (usually absent)<br/>
+                <span style="color:#86efac;">✓</span> WiFi Positioning<br/>
+                <span style="color:#86efac;">✓</span> Network/IP data<br/>
+                <span style="color:#86efac;">✓</span> Windows API fuses both<br/>
+                <strong style="color:#2dd4bf;">Result: ±15–40 meter accuracy</strong>
+              </div>
+            </div>
+          </div>
+          <div class="mt-3 p-2 rounded-xl" style="background:rgba(20,184,166,.07);border:1px solid rgba(20,184,166,.15);">
+            <div style="font-size:11px;color:rgba(255,255,255,.65);">
+              <strong style="color:#2dd4bf;">Conclusion:</strong> Dono ka logic same hai — sirf delivery boy ke phone mein GPS chip hota hai, isliye woh zyada accurate hota hai. Laptop mein GPS chip nahi (mostly), isliye WiFi + Network milake kaam chalate hain. Accuracy thodi kam hogi par <strong class="text-white">geofencing ke liye kaafi hai!</strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- Your laptop proof -->
+        <div class="glass p-4 rounded-xl" style="border-color:rgba(34,197,94,.25);">
+          <div class="flex items-center gap-2 mb-3">
+            <span style="font-size:1.1rem;">✅</span>
+            <span style="font-size:.85rem;font-weight:600;color:white;">Tumhara Laptop — Location Services Already ON!</span>
+          </div>
+          <div style="font-size:11px;color:rgba(255,255,255,.55);line-height:1.7;">
+            Tumhare Windows 11 screenshot se confirm hua ki <strong style="color:#86efac;">Location Services = ON</strong> hai. Matlab SEPIA directly <strong class="text-white">Windows.Devices.Geolocation API</strong> call kare toh Windows automatically WiFi + Network fuse karke location dega. <strong style="color:#2dd4bf;">Zero extra configuration needed.</strong>
+          </div>
+          <div class="mt-3 flex gap-2 flex-wrap">
+            <div class="glass-sm px-3 py-1 rounded-full" style="font-size:10px;color:#86efac;">✓ Location Services ON</div>
+            <div class="glass-sm px-3 py-1 rounded-full" style="font-size:10px;color:#86efac;">✓ Let apps access location ON</div>
+            <div class="glass-sm px-3 py-1 rounded-full" style="font-size:10px;color:#2dd4bf;">✓ SEPIA can use this API</div>
+          </div>
+        </div>
+
+        <!-- How SEPIA will use it -->
+        <div class="glass-teal p-3 rounded-xl">
+          <div style="font-size:.75rem;font-weight:600;color:white;margin-bottom:6px;">🦀 SEPIA Implementation (Rust/Tauri)</div>
+          <div class="code-block" style="font-size:10px;">
+<span class="cc">// Windows.Devices.Geolocation API</span>
+<span class="cc">// Automatically fuses: WiFi + Network + GPS</span>
+let locator = Geolocator::new()?;
+locator.set_desired_accuracy(
+  PositionAccuracy::High <span class="cc">// Use best available</span>
+);
+let position = locator.get_geoposition_async()?.get()?;
+<span class="cc">// Returns: lat, lng, accuracy, source</span>
+<span class="cc">// Windows decides internally which sources to fuse</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- ═══ END SLIDE 14 ═══ -->
+
+<!-- ═══ SLIDE 15 — LIVE LOCATION TRACKING (TL REQUIREMENT) ═══ -->
+<div class="slide" id="slide-15">
+  <div class="w-full max-w-6xl mx-auto flex flex-col gap-4 stagger">
+
+    <!-- Header -->
+    <div class="flex items-center gap-3">
+      <div class="tag tag-rose">Section 15</div>
+      <h2 style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:1.5rem;color:white;">Live Location Tracking — TL Requirement</h2>
+      <div class="tag tag-green">🔴 TL Confirmed</div>
+    </div>
+
+    <!-- TL message callout -->
+    <div class="rounded-2xl p-4 flex items-center gap-5" style="background:linear-gradient(135deg,rgba(244,63,94,.1),rgba(99,102,241,.08));border:1px solid rgba(244,63,94,.35);">
+      <div style="font-size:2rem;flex-shrink:0;">💬</div>
+      <div class="flex-1">
+        <div style="font-size:.7rem;font-weight:700;color:rgba(255,255,255,.35);letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px;">TL — Sourabh Mohite (confirmed today)</div>
+        <div style="font-size:1rem;font-weight:600;color:white;">"Our requirement is to capture the <span style="color:#fda4af;">live location</span> of employees"</div>
+        <div style="font-size:.75rem;color:rgba(255,255,255,.5);margin-top:4px;">+ Geofencing also confirmed ✅ — Both features required</div>
+      </div>
+      <div class="flex flex-col gap-2 flex-shrink-0">
+        <div class="tag tag-green">✅ Live Location</div>
+        <div class="tag tag-green">✅ Geofencing</div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-3 gap-4">
+
+      <!-- Col 1: Periodic vs Live -->
+      <div class="glass p-4 rounded-2xl flex flex-col gap-3">
+        <div class="section-label">Periodic vs Live — What's the Difference?</div>
+
+        <div class="glass-sm p-3 rounded-xl" style="border-color:rgba(245,158,11,.25);background:rgba(245,158,11,.05);">
+          <div class="flex items-center gap-2 mb-2">
+            <div style="width:8px;height:8px;border-radius:50%;background:#f59e0b;flex-shrink:0;"></div>
+            <span style="font-size:.75rem;font-weight:700;color:#fcd34d;">Periodic Tracking (Old Plan)</span>
+          </div>
+          <div style="font-size:11px;color:rgba(255,255,255,.55);line-height:1.7;">
+            → Location check every <strong style="color:#fcd34d;">10 minutes</strong><br/>
+            → Manager dashboard updates slowly<br/>
+            → Good for attendance, not for live map<br/>
+            → Low battery / CPU usage<br/>
+            → <strong style="color:#fda4af;">❌ Not what TL wants</strong>
+          </div>
+        </div>
+
+        <div class="glass-sm p-3 rounded-xl" style="border-color:rgba(20,184,166,.35);background:rgba(20,184,166,.07);">
+          <div class="flex items-center gap-2 mb-2">
+            <div style="width:8px;height:8px;border-radius:50%;background:#14b8a6;box-shadow:0 0 6px #14b8a6;animation:pulse-dot 1.2s infinite;flex-shrink:0;"></div>
+            <span style="font-size:.75rem;font-weight:700;color:#2dd4bf;">Live Tracking (TL Requirement)</span>
+          </div>
+          <div style="font-size:11px;color:rgba(255,255,255,.55);line-height:1.7;">
+            → Location update every <strong style="color:#2dd4bf;">30–60 seconds</strong><br/>
+            → Manager sees real-time employee dots on map<br/>
+            → Movement visible instantly<br/>
+            → Slightly higher CPU usage<br/>
+            → <strong style="color:#86efac;">✅ TL ka exact requirement</strong>
+          </div>
+        </div>
+
+        <!-- Interval comparison -->
+        <div class="glass-sm p-3 rounded-xl">
+          <div class="section-label mb-2">Update Interval Comparison</div>
+          <div class="flex flex-col gap-2">
+            <div>
+              <div class="flex justify-between mb-1"><span style="font-size:10px;color:rgba(255,255,255,.5);">Periodic (10 min)</span><span style="font-size:10px;color:#f59e0b;">Slow</span></div>
+              <div class="acc-bar"><div class="acc-fill" id="iv1" style="width:0%;background:linear-gradient(90deg,#f59e0b,#d97706);"></div></div>
+            </div>
+            <div>
+              <div class="flex justify-between mb-1"><span style="font-size:10px;color:rgba(255,255,255,.5);">Live (30 sec)</span><span style="font-size:10px;color:#14b8a6;">Real-time ✓</span></div>
+              <div class="acc-bar"><div class="acc-fill" id="iv2" style="width:0%;background:linear-gradient(90deg,#14b8a6,#0d9488);"></div></div>
+            </div>
+            <div>
+              <div class="flex justify-between mb-1"><span style="font-size:10px;color:rgba(255,255,255,.5);">Ultra-live (5 sec)</span><span style="font-size:10px;color:#6366f1;">High cost ⚠️</span></div>
+              <div class="acc-bar"><div class="acc-fill" id="iv3" style="width:0%;background:linear-gradient(90deg,#6366f1,#4f46e5);"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Col 2: Live Architecture Flow -->
+      <div class="glass p-4 rounded-2xl flex flex-col gap-3">
+        <div class="section-label">Live Tracking Architecture — SEPIA</div>
+
+        <div class="flex flex-col gap-2">
+          <div class="flex items-center gap-3">
+            <div class="badge-num" style="font-size:10px;flex-shrink:0;">1</div>
+            <div class="flex-1 glass-sm p-2 rounded-lg">
+              <span style="font-size:.7rem;font-weight:600;color:white;">Rust — Location Loop</span><br/>
+              <span style="font-size:10px;color:rgba(255,255,255,.5);">Every 30 sec: Windows Location API call → lat/lng → push to channel</span>
+            </div>
+          </div>
+          <div class="flow-arrow">↓</div>
+          <div class="flex items-center gap-3">
+            <div class="badge-num" style="font-size:10px;background:linear-gradient(135deg,#6366f1,#4f46e5);flex-shrink:0;">2</div>
+            <div class="flex-1 glass-sm p-2 rounded-lg">
+              <span style="font-size:.7rem;font-weight:600;color:white;">Tauri IPC Event</span><br/>
+              <span style="font-size:10px;color:rgba(255,255,255,.5);">location_update event emitted → React UI receives instantly</span>
+            </div>
+          </div>
+          <div class="flow-arrow">↓</div>
+          <div class="flex items-center gap-3">
+            <div class="badge-num" style="font-size:10px;background:linear-gradient(135deg,#f59e0b,#d97706);flex-shrink:0;">3</div>
+            <div class="flex-1 glass-sm p-2 rounded-lg">
+              <span style="font-size:.7rem;font-weight:600;color:white;">Supabase Insert + Broadcast</span><br/>
+              <span style="font-size:10px;color:rgba(255,255,255,.5);">Location saved to DB + Realtime broadcast to all connected managers</span>
+            </div>
+          </div>
+          <div class="flow-arrow">↓</div>
+          <div class="flex items-center gap-3">
+            <div class="badge-num" style="font-size:10px;background:linear-gradient(135deg,#22c55e,#16a34a);flex-shrink:0;">4</div>
+            <div class="flex-1 glass-sm p-2 rounded-lg">
+              <span style="font-size:.7rem;font-weight:600;color:white;">Manager Dashboard — Live Map</span><br/>
+              <span style="font-size:10px;color:rgba(255,255,255,.5);">Employee dot moves on map in real-time via WebSocket subscription</span>
+            </div>
+          </div>
+          <div class="flow-arrow">↓</div>
+          <div class="flex items-center gap-3">
+            <div class="badge-num" style="font-size:10px;background:linear-gradient(135deg,#f43f5e,#be123c);flex-shrink:0;">5</div>
+            <div class="flex-1 glass-sm p-2 rounded-lg">
+              <span style="font-size:.7rem;font-weight:600;color:white;">Geofence Check (Parallel)</span><br/>
+              <span style="font-size:10px;color:rgba(255,255,255,.5);">Every location update → geofence engine checks → entry/exit events fire</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Supabase Realtime -->
+        <div class="glass-teal p-3 rounded-xl">
+          <div style="font-size:.7rem;font-weight:600;color:white;margin-bottom:5px;">⚡ Supabase Realtime (WebSocket)</div>
+          <div class="code-block" style="font-size:10px;">
+<span class="cc">// Manager Dashboard subscribes</span>
+supabase
+  .channel(<span class="cs">'live-locations'</span>)
+  .on(<span class="cs">'postgres_changes'</span>, {
+    event: <span class="cs">'INSERT'</span>,
+    schema: <span class="cs">'location'</span>,
+    table: <span class="cs">'records'</span>,
+    filter: <span class="cs">`org_id=eq.${orgId}`</span>
+  }, (payload) =&gt; {
+    updateEmployeeDotOnMap(payload.new);
+  })
+  .subscribe();
+          </div>
+        </div>
+      </div>
+
+      <!-- Col 3: Performance + What Manager Sees -->
+      <div class="flex flex-col gap-3">
+
+        <!-- What manager sees -->
+        <div class="glass p-4 rounded-xl">
+          <div class="section-label mb-3">👨‍💼 Manager Dashboard — Live View</div>
+          <div class="flex flex-col gap-2">
+            <div class="glass-sm p-2 rounded-xl flex items-center gap-3">
+              <div style="width:10px;height:10px;border-radius:50%;background:#22c55e;box-shadow:0 0 8px #22c55e;animation:pulse-dot 1s infinite;flex-shrink:0;"></div>
+              <div>
+                <div style="font-size:.7rem;font-weight:600;color:white;">Rahul Sharma</div>
+                <div style="font-size:10px;color:rgba(255,255,255,.4);">📍 Office — Sector 62, Noida · Updated 12s ago</div>
+              </div>
+            </div>
+            <div class="glass-sm p-2 rounded-xl flex items-center gap-3">
+              <div style="width:10px;height:10px;border-radius:50%;background:#3b82f6;box-shadow:0 0 8px #3b82f6;animation:pulse-dot 1.4s infinite;flex-shrink:0;"></div>
+              <div>
+                <div style="font-size:.7rem;font-weight:600;color:white;">Priya Patel</div>
+                <div style="font-size:10px;color:rgba(255,255,255,.4);">🏠 WFH — Detected via Corp VPN · Updated 28s ago</div>
+              </div>
+            </div>
+            <div class="glass-sm p-2 rounded-xl flex items-center gap-3">
+              <div style="width:10px;height:10px;border-radius:50%;background:#f59e0b;box-shadow:0 0 8px #f59e0b;animation:pulse-dot 1.8s infinite;flex-shrink:0;"></div>
+              <div>
+                <div style="font-size:.7rem;font-weight:600;color:white;">Amit Singh</div>
+                <div style="font-size:10px;color:rgba(255,255,255,.4);">🚗 In Transit — Moving · Updated 5s ago</div>
+              </div>
+            </div>
+            <div class="glass-sm p-2 rounded-xl flex items-center gap-3">
+              <div style="width:10px;height:10px;border-radius:50%;background:#f43f5e;box-shadow:0 0 8px #f43f5e;flex-shrink:0;"></div>
+              <div>
+                <div style="font-size:.7rem;font-weight:600;color:white;">Sneha Rao</div>
+                <div style="font-size:10px;color:rgba(255,255,255,.4);">⚠️ Offline — Last seen 18 min ago</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Performance tradeoff -->
+        <div class="glass p-3 rounded-xl">
+          <div class="section-label mb-2">⚡ Performance Tradeoff</div>
+          <table class="pres-table">
+            <thead><tr><th>Interval</th><th>CPU</th><th>Battery</th><th>Accuracy</th></tr></thead>
+            <tbody>
+              <tr><td style="color:#f59e0b;">10 min</td><td style="color:#86efac;">Very Low</td><td style="color:#86efac;">Excellent</td><td style="color:#fda4af;">Low</td></tr>
+              <tr style="background:rgba(20,184,166,.06);"><td style="color:#2dd4bf;font-weight:600;">30 sec ✓</td><td style="color:#fcd34d;">Low</td><td style="color:#fcd34d;">Good</td><td style="color:#86efac;">High</td></tr>
+              <tr><td style="color:#6366f1;">5 sec</td><td style="color:#fda4af;">High</td><td style="color:#fda4af;">Poor</td><td style="color:#86efac;">Very High</td></tr>
+            </tbody>
+          </table>
+          <div style="font-size:10px;color:rgba(255,255,255,.4);margin-top:6px;">→ <strong style="color:#2dd4bf;">30 seconds recommended</strong> — best balance of live feel + performance</div>
+        </div>
+
+        <!-- Recommendation -->
+        <div class="rounded-xl p-3" style="background:linear-gradient(135deg,rgba(20,184,166,.12),rgba(99,102,241,.08));border:1px solid rgba(20,184,166,.3);">
+          <div style="font-size:.75rem;font-weight:700;color:white;margin-bottom:5px;">🏛️ Implementation Plan (Updated)</div>
+          <div style="font-size:11px;color:rgba(255,255,255,.6);line-height:1.7;">
+            <span style="color:#86efac;">✓</span> <strong class="text-white">30-sec location loop</strong> in Rust (tokio interval)<br/>
+            <span style="color:#86efac;">✓</span> <strong class="text-white">Supabase Realtime</strong> for live map push<br/>
+            <span style="color:#86efac;">✓</span> <strong class="text-white">Geofence check</strong> on every update (parallel)<br/>
+            <span style="color:#86efac;">✓</span> <strong class="text-white">SQLite buffer</strong> for offline resilience<br/>
+            <span style="color:#86efac;">✓</span> <strong class="text-white">Configurable interval</strong> per org policy
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- ═══ END SLIDE 15 ═══ -->
+
+</div><!-- end slide-container -->
+
+<script>
+  let cur = 0;
+  function slides(){return document.querySelectorAll('.slide');}
+  function buildDots(){
+    const dc=document.getElementById('nav-dots');dc.innerHTML='';
+    slides().forEach((_,i)=>{const d=document.createElement('div');d.className='dot'+(i===cur?' active':'');d.onclick=()=>go(i);dc.appendChild(d);});
+  }
+  function updateUI(){
+    const s=slides(),n=s.length;
+    const pct=n<=1?100:(cur/(n-1))*100;
+    document.getElementById('progress-bar').style.width=pct+'%';
+    document.getElementById('slide-counter').textContent=String(cur+1).padStart(2,'0')+' / '+String(n).padStart(2,'0');
+    document.getElementById('arrow-prev').style.opacity=cur===0?'0.2':'1';
+    document.getElementById('arrow-next').style.opacity=cur===n-1?'0.2':'1';
+    document.querySelectorAll('.dot').forEach((d,i)=>d.classList.toggle('active',i===cur));
+  }
+  function go(idx){
+    const s=slides();
+    if(idx<0||idx>=s.length)return;
+    s[cur].classList.remove('active');s[cur].style.display='none';
+    cur=idx;
+    const ns=s[cur];ns.style.display='flex';ns.style.animation='none';ns.offsetHeight;ns.style.animation='';ns.classList.add('active');
+    // Re-trigger stagger
+    const st=ns.querySelector('.stagger');
+    if(st){st.querySelectorAll(':scope>*').forEach(c=>{c.style.animation='none';c.offsetHeight;c.style.animation='';});}
+    // Re-trigger geofence SVG
+    const gr=ns.querySelector('.geofence-ring');
+    if(gr){gr.style.animation='none';gr.offsetHeight;gr.style.animation='drawCircle 1.5s ease forwards';}
+    // Re-trigger acc bars (slide 3)
+    const bars={bar1:98,bar2:60,bar3:18,bar4:8,bar5:95,bar6:100,perf1:98,perf2:96,perf3:99,perf4:80,f1:70,f2:18,f3:97,iv1:25,iv2:85,iv3:100};
+    Object.entries(bars).forEach(([id,w])=>{const el=ns.querySelector('#'+id);if(el){el.style.width='0';setTimeout(()=>{el.style.width=w+'%';},300);}});
+    updateUI();
+  }
+  function changeSlide(d){go(cur+d);}
+  document.addEventListener('keydown',e=>{
+    if(['ArrowRight','ArrowDown',' ','Enter'].includes(e.key)){e.preventDefault();go(cur+1);}
+    else if(['ArrowLeft','ArrowUp'].includes(e.key)){e.preventDefault();go(cur-1);}
+    else if(e.key==='Home')go(0);
+    else if(e.key==='End')go(slides().length-1);
+  });
+  let tx=0;
+  document.addEventListener('touchstart',e=>{tx=e.touches[0].clientX;},{passive:true});
+  document.addEventListener('touchend',e=>{const d=tx-e.changedTouches[0].clientX;if(Math.abs(d)>50)go(cur+(d>0?1:-1));},{passive:true});
+  buildDots();updateUI();
+</script>
+</body>
+</html>

@@ -1,0 +1,123 @@
+/* ── Overlay & modal shell ───────────────────────────────────────────── */
+.oom-layer    { position: fixed; inset: 0; z-index: 5000; display: grid; place-items: center; padding: 24px; }
+.oom-backdrop { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: rgba(15,23,42,.68); backdrop-filter: blur(5px); cursor: default; }
+.oom-modal    { position: relative; width: min(1160px, 96vw); max-height: 94vh; display: flex; flex-direction: column; overflow: hidden; background: #fff; border-radius: 22px; box-shadow: 0 30px 100px rgba(15,23,42,.32); animation: oom-in .24s ease-out both; }
+@keyframes oom-in { from { opacity: 0; transform: translateY(16px) scale(.985); } to { opacity: 1; transform: none; } }
+
+/* ── Header ──────────────────────────────────────────────────────────── */
+.oom-header       { display: flex; align-items: flex-start; justify-content: space-between; padding: 20px 24px; border-bottom: 1px solid #e2e8f0; background: linear-gradient(135deg,#faf5ff,#fff); flex-shrink: 0; }
+.oom-header h2    { margin: 2px 0 3px; color: #0f172a; font-size: 22px; }
+.oom-header p     { margin: 0; color: #64748b; font-size: 13px; }
+.oom-kicker       { color: #7c3aed; font-size: 10px; font-weight: 800; letter-spacing: 1.5px; }
+.oom-close        { flex-shrink: 0; width: 36px; height: 36px; display: grid; place-items: center; border: 1px solid #e2e8f0; border-radius: 50%; background: #fff; color: #64748b; font-size: 23px; cursor: pointer; }
+.oom-loading      { padding: 90px 24px; color: #64748b; text-align: center; }
+
+/* ── Two-panel body ──────────────────────────────────────────────────── */
+.oom-body    { min-height: 0; display: grid; grid-template-columns: minmax(0,1fr) 340px; overflow: hidden; }
+.oom-main    { min-width: 0; overflow-y: auto; padding: 20px 22px 32px; background: #f8fafc; display: flex; flex-direction: column; gap: 16px; }
+.oom-summary { min-height: 0; display: flex; flex-direction: column; padding: 22px 20px; border-left: 1px solid #e2e8f0; background: #fff; overflow-y: auto; }
+
+/* ── Sections ────────────────────────────────────────────────────────── */
+.oom-section         { padding: 18px; border: 1px solid #e2e8f0; border-radius: 16px; background: #fff; }
+.oom-section-title   { display: flex; align-items: center; gap: 9px; color: #1e293b; font-size: 14px; font-weight: 800; }
+.oom-section-title > span:first-child { width: 25px; height: 25px; display: grid; place-items: center; border-radius: 8px; background: #ede9fe; color: #7c3aed; font-size: 12px; flex-shrink: 0; }
+.oom-selected-badge  { background: #7c3aed; color: #fff; border-radius: 99px; padding: 2px 9px; font-size: 11px; font-weight: 700; }
+
+/* ── Form grid & fields ──────────────────────────────────────────────── */
+.oom-grid       { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 15px; }
+.oom-field      { display: flex; flex-direction: column; gap: 5px; }
+.oom-field-wide { grid-column: 1 / -1; }
+.oom-field > span, .oom-field-label { color: #475569; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .35px; }
+.oom-input      { width: 100%; box-sizing: border-box; border: 1.5px solid #e2e8f0; border-radius: 10px; outline: none; background: #fff; color: #0f172a; font: inherit; font-size: 13px; padding: 10px 11px; transition: border-color .15s, box-shadow .15s; resize: vertical; }
+.oom-input:focus { border-color: #8b5cf6; box-shadow: 0 0 0 3px rgba(139,92,246,.1); }
+
+/* ── Customer searchable list ─────────────────────────────────────────── */
+.oom-cust-list  { margin-top: 6px; max-height: 180px; overflow-y: auto; border: 1.5px solid #e2e8f0; border-radius: 10px; background: #fff; }
+.oom-cust-row   { display: flex; flex-direction: column; padding: 9px 12px; cursor: pointer; border-bottom: 1px solid #f1f5f9; transition: background .1s; }
+.oom-cust-row:last-child { border-bottom: none; }
+.oom-cust-row:hover   { background: #f8fafc; }
+.oom-cust-row.selected { background: #f5f3ff; border-left: 3px solid #7c3aed; padding-left: 9px; }
+.oom-cust-row strong  { font-size: 12px; color: #0f172a; }
+.oom-cust-row small   { font-size: 11px; color: #94a3b8; margin-top: 2px; }
+.oom-cust-empty { padding: 18px; text-align: center; color: #94a3b8; font-size: 12px; }
+
+/* ── Products section header ─────────────────────────────────────────── */
+.oom-products-header { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-bottom: 2px; }
+.oom-search          { width: 210px; }
+.oom-clear-btn       { border: 1px solid #fecaca; border-radius: 8px; background: #fef2f2; color: #dc2626; padding: 6px 10px; font-size: 11px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+
+/* ── Category pills ──────────────────────────────────────────────────── */
+.oom-cats        { display: flex; gap: 7px; overflow-x: auto; padding: 14px 0 12px; }
+.oom-cats button { flex: 0 0 auto; border: 1px solid #e2e8f0; border-radius: 999px; background: #fff; color: #64748b; padding: 6px 11px; font-size: 11px; font-weight: 700; cursor: pointer; }
+.oom-cats button.active { border-color: #8b5cf6; background: #f5f3ff; color: #7c3aed; }
+
+/* ── Product cards ───────────────────────────────────────────────────── */
+.oom-products        { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 9px; }
+.oom-products-empty  { grid-column: 1/-1; padding: 32px; color: #94a3b8; text-align: center; }
+.oom-product         { display: flex; align-items: center; gap: 10px; padding: 10px; border: 1.5px solid #e2e8f0; border-radius: 13px; background: #fff; transition: border-color .15s, box-shadow .15s; }
+.oom-product.selected { border-color: #a78bfa; box-shadow: 0 0 0 2px #f5f3ff; }
+.oom-product.out      { opacity: .55; }
+.oom-product-emoji   { width: 39px; height: 39px; flex: 0 0 auto; display: grid; place-items: center; border-radius: 11px; background: #f1f5f9; font-size: 23px; }
+.oom-product-info    { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 1px; }
+.oom-product-info strong { overflow: hidden; color: #1e293b; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.oom-product-info small  { overflow: hidden; color: #94a3b8; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+.oom-product-info b      { color: #16a34a; font-size: 12px; }
+
+/* Stock badges */
+.oom-stock-ok       { font-size: 10px; font-weight: 700; color: #16a34a; }
+.oom-stock-low      { font-size: 10px; font-weight: 700; color: #d97706; }
+.oom-stock-critical { font-size: 10px; font-weight: 700; color: #dc2626; }
+.oom-stock-out      { font-size: 10px; font-weight: 700; color: #94a3b8; }
+
+/* Add / stepper */
+.oom-add     { border: 0; border-radius: 9px; background: #ede9fe; color: #7c3aed; padding: 7px 10px; font-size: 11px; font-weight: 800; cursor: pointer; white-space: nowrap; }
+.oom-add:disabled { opacity: .4; cursor: not-allowed; }
+.oom-stepper { flex: 0 0 auto; display: flex; align-items: center; gap: 7px; }
+.oom-stepper button { width: 25px; height: 25px; border: 1px solid #ddd6fe; border-radius: 8px; background: #f5f3ff; color: #6d28d9; font-size: 16px; cursor: pointer; }
+.oom-stepper button:disabled { opacity: .4; cursor: not-allowed; }
+.oom-stepper span   { min-width: 15px; color: #1e293b; font-size: 12px; font-weight: 800; text-align: center; }
+
+/* ── Summary panel ───────────────────────────────────────────────────── */
+.oom-summary-items  { min-height: 100px; max-height: 230px; margin: 17px 0 12px; overflow-y: auto; }
+.oom-summary-empty  { padding: 32px 15px; border: 1px dashed #cbd5e1; border-radius: 12px; color: #94a3b8; font-size: 12px; text-align: center; }
+.oom-summary-row    { display: grid; grid-template-columns: 28px minmax(0,1fr) auto; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid #f1f5f9; }
+.oom-summary-emoji  { font-size: 20px; }
+.oom-summary-row div { min-width: 0; display: flex; flex-direction: column; }
+.oom-summary-row div strong { overflow: hidden; color: #334155; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.oom-summary-row div small  { margin-top: 2px; color: #94a3b8; font-size: 10px; }
+.oom-summary-right  { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; }
+.oom-summary-right b { color: #334155; font-size: 11px; white-space: nowrap; }
+.oom-remove-btn     { border: 0; background: none; color: #94a3b8; font-size: 11px; cursor: pointer; padding: 0; line-height: 1; }
+.oom-remove-btn:hover { color: #dc2626; }
+
+.oom-total  { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; padding: 13px 0; border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; color: #475569; font-size: 13px; font-weight: 700; }
+.oom-total strong { color: #16a34a; font-size: 21px; }
+
+/* ── Payment method buttons ──────────────────────────────────────────── */
+.oom-payment        { display: flex; gap: 8px; margin-top: 6px; }
+.oom-pay-opt        { flex: 1; display: flex; align-items: center; justify-content: center; gap: 5px; padding: 9px 4px; border: 1.5px solid #e2e8f0; border-radius: 10px; background: #fff; color: #475569; font-size: 12px; font-weight: 700; cursor: pointer; transition: border-color .15s, background .15s, color .15s; }
+.oom-pay-opt:hover  { border-color: #c4b5fd; background: #faf5ff; }
+.oom-pay-opt.active { border-color: #7c3aed; background: #f5f3ff; color: #7c3aed; }
+
+/* ── Footer controls ─────────────────────────────────────────────────── */
+.oom-error  { margin-top: 12px; padding: 9px 11px; border: 1px solid #fecaca; border-radius: 9px; background: #fef2f2; color: #dc2626; font-size: 11px; font-weight: 600; }
+.oom-submit { width: 100%; margin-top: 14px; border: 0; border-radius: 11px; background: linear-gradient(135deg,#7c3aed,#6d28d9); color: #fff; padding: 12px 16px; font-size: 13px; font-weight: 800; cursor: pointer; box-shadow: 0 8px 18px rgba(124,58,237,.22); }
+.oom-submit:disabled { opacity: .6; cursor: not-allowed; }
+.oom-note   { margin: 8px 0 0; color: #94a3b8; font-size: 9px; text-align: center; }
+
+/* ── Responsive ──────────────────────────────────────────────────────── */
+@media (max-width: 860px) {
+  .oom-layer   { padding: 0; }
+  .oom-modal   { width: 100%; max-height: 100vh; height: 100%; border-radius: 0; }
+  .oom-body    { display: block; overflow-y: auto; }
+  .oom-main    { overflow: visible; }
+  .oom-summary { border-top: 1px solid #e2e8f0; border-left: 0; overflow: visible; }
+}
+@media (max-width: 560px) {
+  .oom-header               { padding: 16px; }
+  .oom-main                 { padding: 14px; }
+  .oom-grid, .oom-products  { grid-template-columns: 1fr; }
+  .oom-field-wide           { grid-column: auto; }
+  .oom-products-header      { flex-direction: column; align-items: stretch; }
+  .oom-search               { width: 100%; }
+}

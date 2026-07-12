@@ -15,9 +15,14 @@ axiosInstance.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('token')
-      localStorage.removeItem('user')
-      window.location.href = '/login'
+      const url = error.config?.url || ''
+      // Auth endpoints return 401 for wrong credentials — let the form handle it inline.
+      // Only redirect on 401 from protected endpoints (expired JWT).
+      if (!url.includes('/auth/')) {
+        localStorage.removeItem('token')
+        localStorage.removeItem('user')
+        window.location.href = '/'
+      }
     }
     return Promise.reject(error)
   }

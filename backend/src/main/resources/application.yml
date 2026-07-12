@@ -12,6 +12,13 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 6MB
+
+app:
+  upload-dir: ${UPLOAD_DIR:uploads}
 
 server:
   port: 8080

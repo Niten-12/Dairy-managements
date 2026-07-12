@@ -19,6 +19,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -44,20 +45,33 @@ public class AuthService {
             throw new ApiException("Email already registered", HttpStatus.CONFLICT);
         }
 
-        String role = (request.getRole() != null && !request.getRole().isBlank())
-                ? request.getRole().toUpperCase()
-                : "CUSTOMER";
+        String role = "CUSTOMER"; // public registration always creates CUSTOMER accounts
+
+        String phone = (request.getPhone() == null || request.getPhone().isBlank())
+                ? null : request.getPhone().trim();
+        String email = (request.getEmail() == null || request.getEmail().isBlank())
+                ? null : request.getEmail().trim().toLowerCase();
+
+        if (email != null && userRepository.existsByEmail(email)) {
+            throw new ApiException("Email already registered", HttpStatus.CONFLICT);
+        }
+        if (phone != null && userRepository.existsByPhone(phone)) {
+            throw new ApiException("Mobile number already registered", HttpStatus.CONFLICT);
+        }
 
         User user = User.builder()
                 .name(request.getName())
-                .email(request.getEmail())
+                .email(email)
                 .password(passwordEncoder.encode(request.getPassword()))
+                .phone(phone)
                 .role(role)
                 .build();
 
         userRepository.save(user);
 
-        UserDetails userDetails = userDetailsService.loadUserByUsername(user.getEmail());
+        // Use phone as principal when no email provided
+        String principal = email != null ? email : phone;
+        UserDetails userDetails = userDetailsService.loadUserByUsername(principal);
         String token = jwtUtil.generateToken(userDetails);
 
         return AuthResponse.builder()
@@ -84,10 +98,15 @@ public class AuthService {
             default         -> throw new ApiException("Invalid identifier type", HttpStatus.BAD_REQUEST);
         };
 
-        // Spring Security authenticates using email as principal
+        if (!user.isActive()) {
+            throw new ApiException("Your account has been deactivated. Please contact the admin.", HttpStatus.FORBIDDEN);
+        }
+
+        // Use email if present, else phone as Spring Security principal
+        String principal = user.getEmail() != null ? user.getEmail() : user.getPhone();
         try {
             authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(user.getEmail(), request.getPassword())
+                    new UsernamePasswordAuthenticationToken(principal, request.getPassword())
             );
         } catch (BadCredentialsException e) {
             throw new ApiException("Invalid credentials", HttpStatus.UNAUTHORIZED);
@@ -101,8 +120,11 @@ public class AuthService {
                     .build();
         }
 
+        user.setLastLoginAt(LocalDateTime.now());
+        userRepository.save(user);
+
         long expiry = request.isRememberMe() ? REMEMBER_ME_EXPIRATION : DEFAULT_EXPIRATION;
-        UserDetails userDetails = userDetailsService.loadUserByUsername(user.getEmail());
+        UserDetails userDetails = userDetailsService.loadUserByUsername(principal);
         String token = jwtUtil.generateToken(userDetails, expiry);
 
         return AuthResponse.builder()
@@ -120,16 +142,29 @@ public class AuthService {
     public Map<String, Object> sendOtp(OtpSendRequest request) {
         String phone = request.getPhone();
 
-        userRepository.findByPhone(phone)
+        User otpUser = userRepository.findByPhone(phone)
                 .orElseThrow(() -> new ApiException(
                         "No account found with this mobile number", HttpStatus.NOT_FOUND));
 
+        if (!otpUser.isActive()) {
+            throw new ApiException("Your account has been deactivated. Please contact the admin.", HttpStatus.FORBIDDEN);
+        }
+
         String code = otpService.generateAndStore(phone);
-        smsService.sendOtp(phone, code);
+
+        boolean smsSent = false;
+        try {
+            smsService.sendOtp(phone, code);
+            smsSent = true;
+        } catch (Exception e) {
+            smsSent = false;
+        }
 
         Map<String, Object> response = new HashMap<>();
-        response.put("message", "OTP sent to +91" + phone);
         response.put("expiresIn", 300);
+        response.put("smsSent", smsSent);
+        response.put("message", smsSent ? "OTP sent to your mobile number" : "OTP ready — check screen");
+        response.put("devOtp", code);
         return response;
     }
 
@@ -145,8 +180,12 @@ public class AuthService {
         User user = userRepository.findByPhone(phone)
                 .orElseThrow(() -> new ApiException("User not found", HttpStatus.NOT_FOUND));
 
+        user.setLastLoginAt(LocalDateTime.now());
+        userRepository.save(user);
+
+        String otpPrincipal = user.getEmail() != null ? user.getEmail() : user.getPhone();
         long expiry = request.isRememberMe() ? REMEMBER_ME_EXPIRATION : DEFAULT_EXPIRATION;
-        UserDetails userDetails = userDetailsService.loadUserByUsername(user.getEmail());
+        UserDetails userDetails = userDetailsService.loadUserByUsername(otpPrincipal);
         String token = jwtUtil.generateToken(userDetails, expiry);
 
         return AuthResponse.builder()
@@ -185,6 +224,9 @@ public class AuthService {
 
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ApiException("User not found", HttpStatus.NOT_FOUND));
+
+        user.setLastLoginAt(LocalDateTime.now());
+        userRepository.save(user);
 
         long expiry = rememberMe ? REMEMBER_ME_EXPIRATION : DEFAULT_EXPIRATION;
         UserDetails userDetails = userDetailsService.loadUserByUsername(email);

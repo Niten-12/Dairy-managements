@@ -55,6 +55,15 @@ export function AuthProvider({ children }) {
     setUser(null)
   }, [])
 
+  const setSession = useCallback((data) => {
+    const expiresAt = Date.now() + (data.expiresIn || 86400000)
+    localStorage.setItem('token', data.token)
+    localStorage.setItem('user', JSON.stringify({ email: data.email, name: data.name, role: data.role }))
+    localStorage.setItem(TOKEN_EXPIRY_KEY, String(expiresAt))
+    localStorage.setItem(REMEMBER_ME_KEY, String(data.rememberMe || false))
+    setUser({ email: data.email, name: data.name, role: data.role })
+  }, [])
+
   const updateUser = useCallback((updatedData, newToken) => {
     const merged = { ...JSON.parse(localStorage.getItem('user') || '{}'), ...updatedData }
     localStorage.setItem('user', JSON.stringify(merged))
@@ -65,7 +74,7 @@ export function AuthProvider({ children }) {
   const rememberMe = localStorage.getItem(REMEMBER_ME_KEY) === 'true'
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, updateUser, rememberMe, isAuthenticated: !!user }}>
+    <AuthContext.Provider value={{ user, login, logout, updateUser, setSession, rememberMe, isAuthenticated: !!user }}>
       {children}
     </AuthContext.Provider>
   )

@@ -1,0 +1,2003 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Loop Engineering &mdash; Claude Code Mastery</title>
+    <meta name="description"
+        content="Complete guide to Loop Engineering with Claude Code: HLD diagrams, frameworks, methods, and production-style loop prompts." />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Fira+Code:wght@400;500;600&display=swap"
+        rel="stylesheet" />
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #080b10;
+            font-family: 'Inter', sans-serif;
+            color: #e2e8f0;
+            overflow-x: hidden;
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #0f1117;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #2952f3;
+            border-radius: 3px;
+        }
+
+        .glass {
+            background: rgba(20, 24, 36, 0.8);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(41, 82, 243, 0.15);
+        }
+
+        .glass-strong {
+            background: rgba(20, 24, 36, 0.95);
+            backdrop-filter: blur(24px);
+            border: 1px solid rgba(41, 82, 243, 0.25);
+        }
+
+        .gradient-text {
+            background: linear-gradient(135deg, #527bff 0%, #a78bfa 50%, #34d399 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .gradient-brand {
+            background: linear-gradient(135deg, #2952f3, #7c3aed);
+        }
+
+        .hero-bg {
+            background: radial-gradient(ellipse 80% 60% at 50% -10%, rgba(41, 82, 243, 0.3) 0%, transparent 60%), radial-gradient(ellipse 50% 50% at 80% 80%, rgba(124, 58, 237, 0.2) 0%, transparent 60%), #080b10;
+        }
+
+        .node-box {
+            background: linear-gradient(135deg, rgba(20, 24, 36, 0.9), rgba(30, 36, 53, 0.9));
+            border: 1px solid rgba(41, 82, 243, 0.3);
+            border-radius: 12px;
+            padding: 12px 20px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 0.85rem;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .node-box:hover {
+            border-color: #2952f3;
+            box-shadow: 0 0 20px rgba(41, 82, 243, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .node-box.active {
+            border-color: #34d399;
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(6, 182, 212, 0.1));
+            box-shadow: 0 0 20px rgba(52, 211, 153, 0.3);
+        }
+
+        .tab-btn {
+            transition: all 0.3s ease;
+            border-bottom: 2px solid transparent;
+            cursor: pointer;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        .tab-btn.active {
+            border-color: #2952f3;
+            color: #527bff !important;
+            background: rgba(41, 82, 243, 0.1);
+        }
+
+        .tab-btn:not(.active) {
+            color: #94a3b8;
+        }
+
+        .code-block {
+            background: #0d1117;
+            border: 1px solid #1e2435;
+            border-radius: 12px;
+            padding: 20px;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.8rem;
+            line-height: 1.75;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .code-block::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #2952f3, #7c3aed, #34d399);
+        }
+
+        .ck {
+            color: #ff79c6;
+        }
+
+        .cs {
+            color: #f1fa8c;
+        }
+
+        .cc {
+            color: #6272a4;
+            font-style: italic;
+        }
+
+        .cf {
+            color: #50fa7b;
+        }
+
+        .cv {
+            color: #8be9fd;
+        }
+
+        .co {
+            color: #ff5555;
+        }
+
+        .cg {
+            color: #34d399;
+        }
+
+        .cn {
+            color: #bd93f9;
+        }
+
+        .compare-card {
+            background: rgba(20, 24, 36, 0.8);
+            border-radius: 16px;
+            padding: 24px;
+            border: 1px solid rgba(30, 36, 53, 0.8);
+            transition: all 0.3s;
+        }
+
+        .method-card {
+            background: rgba(20, 24, 36, 0.6);
+            border: 1px solid rgba(30, 36, 53, 0.8);
+            border-radius: 16px;
+            padding: 24px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .method-card:hover {
+            background: rgba(26, 32, 53, 0.9);
+            border-color: rgba(41, 82, 243, 0.4);
+            transform: translateY(-4px);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        .method-card.selected {
+            border-color: #2952f3;
+            background: rgba(41, 82, 243, 0.08);
+            box-shadow: 0 0 30px rgba(41, 82, 243, 0.2);
+        }
+
+        .sc {
+            height: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .scl {
+            width: 2px;
+            height: 100%;
+            background: linear-gradient(to bottom, #2952f3 0%, rgba(41, 82, 243, 0.2) 100%);
+        }
+
+        .tl-item {
+            position: relative;
+            padding-left: 40px;
+            margin-bottom: 16px;
+        }
+
+        .tl-item::before {
+            content: '';
+            position: absolute;
+            left: 16px;
+            top: 0;
+            bottom: -16px;
+            width: 2px;
+            background: linear-gradient(to bottom, #2952f3, rgba(41, 82, 243, 0.1));
+        }
+
+        .tl-item:last-child::before {
+            display: none;
+        }
+
+        .tl-dot {
+            position: absolute;
+            left: 8px;
+            top: 6px;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            border: 2px solid #2952f3;
+            background: #080b10;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .data-flow-line {
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #2952f3, #7c3aed, transparent);
+            background-size: 200% auto;
+            animation: data-flow 2s linear infinite;
+        }
+
+        @keyframes data-flow {
+            0% {
+                background-position: 200% center;
+            }
+
+            100% {
+                background-position: -200% center;
+            }
+        }
+
+        .fp {
+            background: rgba(41, 82, 243, 0.1);
+            border: 1px solid rgba(41, 82, 243, 0.3);
+            border-radius: 8px;
+            padding: 6px 14px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: #86a8ff;
+            display: inline-block;
+            margin: 4px;
+            transition: all 0.2s;
+        }
+
+        .fp:hover {
+            background: rgba(41, 82, 243, 0.25);
+            color: #fff;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 12px;
+            border-radius: 999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .hld-box {
+            border-radius: 10px;
+            padding: 10px 16px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s;
+        }
+
+        .se {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.7s ease-out;
+        }
+
+        .se.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-8px);
+            }
+        }
+
+        .af {
+            animation: float 4s ease-in-out infinite;
+        }
+
+        @keyframes pulse-slow {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.6;
+            }
+        }
+
+        .aps {
+            animation: pulse-slow 3s ease-in-out infinite;
+        }
+
+        @keyframes ba {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(4px);
+            }
+        }
+
+        .bounce-svg {
+            animation: ba 1.5s ease-in-out infinite;
+        }
+
+        .neon {
+            box-shadow: 0 0 0 1px rgba(41, 82, 243, 0.4), 0 0 20px rgba(41, 82, 243, 0.15);
+        }
+
+        .loop-num {
+            font-size: 3rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, #527bff, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        pre {
+            white-space: pre-wrap;
+            word-break: break-word;
+            margin: 0;
+        }
+    </style>
+</head>
+
+<body class="hero-bg">
+
+    <!-- NAV -->
+    <nav id="main-nav" class="glass-strong" style="position:fixed;top:0;left:0;right:0;z-index:50;">
+        <div
+            style="max-width:1200px;margin:0 auto;padding:12px 24px;display:flex;align-items:center;justify-content:space-between;">
+            <div style="display:flex;align-items:center;gap:12px;">
+                <div class="gradient-brand"
+                    style="width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:14px;">
+                    &#8635;</div>
+                <span style="font-weight:700;color:white;font-size:14px;letter-spacing:0.05em;">Loop<span
+                        style="color:#527bff;">Engineering</span></span>
+            </div>
+            <div style="display:flex;align-items:center;gap:4px;">
+                <a href="#concept" class="nav-link"
+                    style="padding:6px 12px;border-radius:8px;font-size:12px;font-weight:500;color:#94a3b8;text-decoration:none;transition:all 0.2s;">Concept</a>
+                <a href="#comparison" class="nav-link"
+                    style="padding:6px 12px;border-radius:8px;font-size:12px;font-weight:500;color:#94a3b8;text-decoration:none;">Prompt
+                    vs Loop</a>
+                <a href="#how-it-works" class="nav-link"
+                    style="padding:6px 12px;border-radius:8px;font-size:12px;font-weight:500;color:#94a3b8;text-decoration:none;">How
+                    It Works</a>
+                <a href="#framework" class="nav-link"
+                    style="padding:6px 12px;border-radius:8px;font-size:12px;font-weight:500;color:#94a3b8;text-decoration:none;">Framework</a>
+                <a href="#methods" class="nav-link"
+                    style="padding:6px 12px;border-radius:8px;font-size:12px;font-weight:500;color:#94a3b8;text-decoration:none;">Methods</a>
+                <a href="#production" class="nav-link"
+                    style="padding:6px 12px;border-radius:8px;font-size:12px;font-weight:500;color:#94a3b8;text-decoration:none;">Production</a>
+            </div>
+            <span class="badge"
+                style="background:rgba(52,211,153,0.1);color:#34d399;border:1px solid rgba(52,211,153,0.3);">
+                <span
+                    style="width:8px;height:8px;background:#34d399;border-radius:50%;display:inline-block;animation:pulse 2s infinite;"></span>
+                Claude Code Pro
+            </span>
+        </div>
+    </nav>
+
+    <!-- HERO -->
+    <section
+        style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:80px 24px 64px;">
+        <div class="badge af"
+            style="background:rgba(41,82,243,0.1);color:#86a8ff;border:1px solid rgba(41,82,243,0.3);margin-bottom:24px;font-size:13px;">
+            &#9889; Advanced Agentic Workflow Engineering
+        </div>
+        <h1 style="font-size:clamp(2.5rem,7vw,4.5rem);font-weight:900;margin-bottom:24px;line-height:1.1;">
+            <span class="gradient-text">Loop Engineering</span><br>
+            <span style="color:white;font-size:clamp(1.8rem,5vw,3rem);font-weight:700;">with Claude Code</span>
+        </h1>
+        <p style="color:#94a3b8;font-size:1.1rem;max-width:640px;margin-bottom:40px;line-height:1.7;">
+            A loop is not a Claude Code feature &mdash; it's an <strong style="color:white;">engineering
+                pattern</strong>.
+            Design autonomous workflows that <em style="color:#527bff;">plan, execute, verify, and improve</em> until
+            measurable goals are reached.
+        </p>
+
+        <!-- Hero nodes -->
+        <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:12px;margin-bottom:48px;">
+            <div class="node-box active" style="min-width:110px;">
+                <div style="color:#34d399;font-size:1.4rem;margin-bottom:4px;">&#127919;</div>Discover
+            </div>
+            <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="#527bff" style="flex-shrink:0;">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
+            </svg>
+            <div class="node-box" style="min-width:110px;">
+                <div style="color:#527bff;font-size:1.4rem;margin-bottom:4px;">&#128203;</div>Plan
+            </div>
+            <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="#527bff" style="flex-shrink:0;">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
+            </svg>
+            <div class="node-box" style="min-width:110px;">
+                <div style="color:#a78bfa;font-size:1.4rem;margin-bottom:4px;">&#9889;</div>Execute
+            </div>
+            <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="#527bff" style="flex-shrink:0;">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
+            </svg>
+            <div class="node-box" style="min-width:110px;">
+                <div style="color:#fbbf24;font-size:1.4rem;margin-bottom:4px;">&#128269;</div>Verify
+            </div>
+            <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="#527bff" style="flex-shrink:0;">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
+            </svg>
+            <div class="node-box" style="min-width:110px;">
+                <div style="color:#fb7185;font-size:1.4rem;margin-bottom:4px;">&#8635;</div>Iterate
+            </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:24px;max-width:400px;">
+            <div class="glass" style="border-radius:16px;padding:16px;text-align:center;">
+                <div class="loop-num" style="font-size:2rem;">4</div>
+                <div style="color:#64748b;font-size:12px;margin-top:4px;">Framework Parts</div>
+            </div>
+            <div class="glass" style="border-radius:16px;padding:16px;text-align:center;">
+                <div class="loop-num" style="font-size:2rem;">5</div>
+                <div style="color:#64748b;font-size:12px;margin-top:4px;">Methods</div>
+            </div>
+            <div class="glass" style="border-radius:16px;padding:16px;text-align:center;">
+                <div class="loop-num" style="font-size:2rem;">&#8734;</div>
+                <div style="color:#64748b;font-size:12px;margin-top:4px;">Automation</div>
+            </div>
+        </div>
+        <a href="#concept"
+            style="margin-top:48px;display:flex;flex-direction:column;align-items:center;gap:8px;color:#64748b;font-size:14px;text-decoration:none;">
+            <span>Scroll to explore</span>
+            <svg class="bounce-svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
+        </a>
+    </section>
+
+    <!-- SECTION 1: MISUNDERSTANDING -->
+    <section id="concept" style="padding:96px 24px;">
+        <div style="max-width:1200px;margin:0 auto;">
+            <div class="se" style="text-align:center;margin-bottom:64px;">
+                <span class="badge"
+                    style="background:rgba(244,63,94,0.1);color:#fb7185;border:1px solid rgba(244,63,94,0.3);margin-bottom:16px;display:inline-flex;">&#129504;
+                    Core Concept</span>
+                <h2 style="font-size:clamp(2rem,4vw,2.5rem);font-weight:900;color:white;margin-bottom:16px;">The Biggest
+                    Misunderstanding</h2>
+                <p style="color:#94a3b8;max-width:480px;margin:0 auto;">Most developers confuse Claude Code features
+                    with engineering patterns.</p>
+            </div>
+            <div class="se" style="display:grid;grid-template-columns:1fr 1fr;gap:32px;">
+                <div class="compare-card" style="border-color:rgba(244,63,94,0.25);background:rgba(244,63,94,0.04);">
+                    <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;">
+                        <div
+                            style="width:40px;height:40px;border-radius:12px;background:rgba(244,63,94,0.15);display:flex;align-items:center;justify-content:center;font-size:20px;">
+                            &#10060;</div>
+                        <div>
+                            <div style="font-weight:700;font-size:12px;color:#fb7185;">WRONG BELIEF</div>
+                            <div style="color:white;font-weight:600;">"A loop is a Claude Code feature"</div>
+                        </div>
+                    </div>
+                    <div style="display:flex;flex-direction:column;gap:12px;">
+                        <div
+                            style="background:rgba(244,63,94,0.08);border-radius:8px;padding:12px;display:flex;gap:12px;">
+                            <span style="color:#fb7185;">&#8226;</span><span
+                                style="color:#cbd5e1;font-size:14px;">Searching for <code
+                                    style="color:#fca5a5;font-size:12px;background:rgba(153,27,27,0.3);padding:2px 6px;border-radius:4px;">/loop</code>
+                                command in Claude Code</span>
+                        </div>
+                        <div
+                            style="background:rgba(244,63,94,0.08);border-radius:8px;padding:12px;display:flex;gap:12px;">
+                            <span style="color:#fb7185;">&#8226;</span><span
+                                style="color:#cbd5e1;font-size:14px;">Expecting a built-in "Loop Mode" toggle</span>
+                        </div>
+                        <div
+                            style="background:rgba(244,63,94,0.08);border-radius:8px;padding:12px;display:flex;gap:12px;">
+                            <span style="color:#fb7185;">&#8226;</span><span
+                                style="color:#cbd5e1;font-size:14px;">Waiting for Claude to loop automatically without
+                                setup</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="compare-card" style="border-color:rgba(52,211,153,0.25);background:rgba(52,211,153,0.04);">
+                    <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;">
+                        <div
+                            style="width:40px;height:40px;border-radius:12px;background:rgba(52,211,153,0.15);display:flex;align-items:center;justify-content:center;font-size:20px;">
+                            &#9989;</div>
+                        <div>
+                            <div style="font-weight:700;font-size:12px;color:#34d399;">REALITY</div>
+                            <div style="color:white;font-weight:600;">"A loop is an engineering workflow pattern"</div>
+                        </div>
+                    </div>
+                    <div style="display:flex;flex-direction:column;gap:12px;">
+                        <div
+                            style="background:rgba(52,211,153,0.08);border-radius:8px;padding:12px;display:flex;gap:12px;">
+                            <span style="color:#34d399;">&#10003;</span><span style="color:#cbd5e1;font-size:14px;">You
+                                design the loop through <strong style="color:white;">natural language
+                                    instructions</strong></span>
+                        </div>
+                        <div
+                            style="background:rgba(52,211,153,0.08);border-radius:8px;padding:12px;display:flex;gap:12px;">
+                            <span style="color:#34d399;">&#10003;</span><span
+                                style="color:#cbd5e1;font-size:14px;">Claude Code <strong
+                                    style="color:white;">executes</strong> the autonomous workflow you specify</span>
+                        </div>
+                        <div
+                            style="background:rgba(52,211,153,0.08);border-radius:8px;padding:12px;display:flex;gap:12px;">
+                            <span style="color:#34d399;">&#10003;</span><span style="color:#cbd5e1;font-size:14px;">Any
+                                installation works via <strong style="color:white;">CLAUDE.md, Skills,
+                                    Hooks</strong></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Architecture Code -->
+            <div class="glass se" style="border-radius:20px;padding:32px;margin-top:64px;">
+                <h3 style="font-size:1.2rem;font-weight:700;color:white;margin-bottom:24px;text-align:center;">Claude
+                    Code Internal Architecture &mdash; The Tool-Use Loop</h3>
+                <div class="code-block">
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
+                        <div style="width:12px;height:12px;border-radius:50%;background:#ef4444;"></div>
+                        <div style="width:12px;height:12px;border-radius:50%;background:#f59e0b;"></div>
+                        <div style="width:12px;height:12px;border-radius:50%;background:#22c55e;"></div>
+                        <span style="color:#64748b;font-size:12px;margin-left:8px;">claude_core.pseudo</span>
+                    </div>
+                    <pre><span class="cc">// Claude Code execution core (from arXiv research paper)</span>
+
+<span class="ck">while</span> (<span class="cv">goal_not_complete</span>) {
+  <span class="cf">readFiles</span>()         <span class="cc">// read current codebase state</span>
+  <span class="cf">think</span>()              <span class="cc">// reason about next best action</span>
+  <span class="cf">editCode</span>()           <span class="cc">// make file changes</span>
+  <span class="cf">runCommand</span>()         <span class="cc">// run tests / build / lint</span>
+  <span class="cf">readOutput</span>()         <span class="cc">// observe results</span>
+  <span class="cf">decideNextAction</span>()   <span class="cc">// plan what comes next</span>
+}
+
+<span class="cc">// Surrounding systems add safety and scalability:</span>
+<span class="cc">// Permissions | Skills | Hooks | Context Management | Sub-Agents</span></pre>
+                </div>
+                <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-top:32px;">
+                    <div class="hld-box"
+                        style="background:rgba(41,82,243,0.12);border:1px solid rgba(41,82,243,0.3);color:#86a8ff;">
+                        &#128274; Permissions</div>
+                    <div class="hld-box"
+                        style="background:rgba(124,58,237,0.12);border:1px solid rgba(124,58,237,0.3);color:#a78bfa;">
+                        &#129513; Skills</div>
+                    <div class="hld-box"
+                        style="background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.3);color:#fbbf24;">
+                        &#127907; Hooks</div>
+                    <div class="hld-box"
+                        style="background:rgba(16,185,129,0.12);border:1px solid rgba(16,185,129,0.3);color:#34d399;">
+                        &#129504; Context</div>
+                    <div class="hld-box"
+                        style="background:rgba(244,63,94,0.12);border:1px solid rgba(244,63,94,0.3);color:#fb7185;">
+                        &#128101; Sub-Agents</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION 2: COMPARISON -->
+    <section id="comparison" style="padding:96px 24px;background:rgba(8,11,16,0.8);">
+        <div style="max-width:1200px;margin:0 auto;">
+            <div class="se" style="text-align:center;margin-bottom:64px;">
+                <span class="badge"
+                    style="background:rgba(41,82,243,0.1);color:#86a8ff;border:1px solid rgba(41,82,243,0.3);margin-bottom:16px;display:inline-flex;">&#9876;
+                    Comparison</span>
+                <h2 style="font-size:clamp(2rem,4vw,2.5rem);font-weight:900;color:white;margin-bottom:16px;">Traditional
+                    Prompt vs Loop Engineering</h2>
+                <p style="color:#94a3b8;max-width:480px;margin:0 auto;">The fundamental difference in how you work with
+                    AI.</p>
+            </div>
+            <div class="se" style="display:grid;grid-template-columns:1fr 1fr;gap:32px;">
+                <!-- Traditional -->
+                <div class="compare-card">
+                    <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;">
+                        <div
+                            style="width:40px;height:40px;border-radius:12px;background:rgba(244,63,94,0.15);display:flex;align-items:center;justify-content:center;font-size:20px;">
+                            &#128104;&#8205;&#128187;</div>
+                        <div>
+                            <div
+                                style="color:#94a3b8;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.1em;">
+                                Traditional Prompt</div>
+                            <div style="color:white;font-weight:700;font-size:1.1rem;">You drive everything</div>
+                        </div>
+                    </div>
+                    <div>
+                        <div
+                            style="background:rgba(244,63,94,0.08);border:1px solid rgba(244,63,94,0.15);border-radius:12px;padding:12px;display:flex;align-items:center;gap:12px;">
+                            <div
+                                style="width:24px;height:24px;border-radius:50%;background:rgba(244,63,94,0.3);color:#fca5a5;font-weight:700;font-size:12px;display:flex;align-items:center;justify-content:center;">
+                                &#128100;</div>
+                            <span style="color:#cbd5e1;font-size:14px;">You: <em>"Write Login API"</em></span>
+                        </div>
+                        <div class="sc">
+                            <div class="scl"
+                                style="background:linear-gradient(to bottom,rgba(244,63,94,0.5),rgba(244,63,94,0.1));">
+                            </div>
+                        </div>
+                        <div
+                            style="background:rgba(30,36,53,0.5);border-radius:12px;padding:12px;display:flex;align-items:center;gap:12px;">
+                            <span>&#129302;</span><span style="color:#cbd5e1;font-size:14px;">Claude writes code...
+                                <strong style="color:#fb7185;">STOPS</strong></span>
+                        </div>
+                        <div class="sc">
+                            <div class="scl"
+                                style="background:linear-gradient(to bottom,rgba(244,63,94,0.5),rgba(244,63,94,0.1));">
+                            </div>
+                        </div>
+                        <div
+                            style="background:rgba(244,63,94,0.08);border:1px solid rgba(244,63,94,0.15);border-radius:12px;padding:12px;display:flex;align-items:center;gap:12px;">
+                            <div
+                                style="width:24px;height:24px;border-radius:50%;background:rgba(244,63,94,0.3);color:#fca5a5;font-weight:700;font-size:12px;display:flex;align-items:center;justify-content:center;">
+                                &#128100;</div>
+                            <span style="color:#cbd5e1;font-size:14px;">You: <em>"Fix bug"</em></span>
+                        </div>
+                        <div class="sc">
+                            <div class="scl"
+                                style="background:linear-gradient(to bottom,rgba(244,63,94,0.5),rgba(244,63,94,0.1));">
+                            </div>
+                        </div>
+                        <div
+                            style="background:rgba(30,36,53,0.5);border-radius:12px;padding:12px;display:flex;align-items:center;gap:12px;">
+                            <span>&#129302;</span><span style="color:#cbd5e1;font-size:14px;">Claude fixes... <strong
+                                    style="color:#fb7185;">STOPS AGAIN</strong></span>
+                        </div>
+                        <div class="sc">
+                            <div class="scl"
+                                style="background:linear-gradient(to bottom,rgba(244,63,94,0.5),rgba(244,63,94,0.1));">
+                            </div>
+                        </div>
+                        <div
+                            style="background:rgba(244,63,94,0.08);border:1px solid rgba(244,63,94,0.15);border-radius:12px;padding:12px;display:flex;align-items:center;gap:12px;">
+                            <div
+                                style="width:24px;height:24px;border-radius:50%;background:rgba(244,63,94,0.3);color:#fca5a5;font-weight:700;font-size:12px;display:flex;align-items:center;justify-content:center;">
+                                &#128100;</div>
+                            <span style="color:#cbd5e1;font-size:14px;">You: <em>"Improve performance"</em></span>
+                        </div>
+                        <div class="sc">
+                            <div class="scl"
+                                style="background:linear-gradient(to bottom,rgba(244,63,94,0.5),rgba(244,63,94,0.1));">
+                            </div>
+                        </div>
+                        <div
+                            style="background:rgba(30,36,53,0.5);border-radius:12px;padding:12px;display:flex;align-items:center;gap:12px;">
+                            <span>&#129302;</span><span style="color:#cbd5e1;font-size:14px;">Claude improves... <strong
+                                    style="color:#fb7185;">STOPS AGAIN</strong></span>
+                        </div>
+                    </div>
+                    <div
+                        style="margin-top:24px;background:rgba(244,63,94,0.08);border:1px solid rgba(244,63,94,0.2);border-radius:12px;padding:12px;text-align:center;">
+                        <span style="color:#fb7185;font-weight:700;">&#10071; YOU are the loop &mdash; manual,
+                            repetitive, slow</span>
+                    </div>
+                </div>
+
+                <!-- Loop -->
+                <div class="compare-card" style="border-color:rgba(52,211,153,0.2);">
+                    <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;">
+                        <div
+                            style="width:40px;height:40px;border-radius:12px;background:rgba(52,211,153,0.15);display:flex;align-items:center;justify-content:center;font-size:20px;">
+                            &#8635;</div>
+                        <div>
+                            <div
+                                style="color:#94a3b8;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.1em;">
+                                Loop Engineering</div>
+                            <div style="color:white;font-weight:700;font-size:1.1rem;">Claude drives itself</div>
+                        </div>
+                    </div>
+                    <div>
+                        <div
+                            style="background:rgba(41,82,243,0.1);border:1px solid rgba(41,82,243,0.2);border-radius:12px;padding:12px;display:flex;align-items:center;gap:12px;">
+                            <span>&#127919;</span><span style="color:white;font-weight:600;font-size:14px;">Goal: Create
+                                Login API</span>
+                        </div>
+                        <div class="sc">
+                            <div class="scl"></div>
+                        </div>
+                        <div
+                            style="background:rgba(30,36,53,0.5);border-radius:12px;padding:12px;display:flex;align-items:center;gap:12px;">
+                            <span>&#9999;&#65039;</span><span style="color:#cbd5e1;font-size:14px;">Claude writes
+                                code</span>
+                        </div>
+                        <div class="sc">
+                            <div class="scl"></div>
+                        </div>
+                        <div
+                            style="background:rgba(30,36,53,0.5);border-radius:12px;padding:12px;display:flex;align-items:center;gap:12px;">
+                            <span>&#129514;</span><span style="color:#cbd5e1;font-size:14px;">Runs tests</span>
+                        </div>
+                        <div class="sc">
+                            <div class="scl"></div>
+                        </div>
+                        <div
+                            style="background:rgba(30,36,53,0.5);border-radius:12px;padding:12px;display:flex;align-items:center;gap:12px;">
+                            <span>&#128218;</span><span style="color:#cbd5e1;font-size:14px;">Reads failures</span>
+                        </div>
+                        <div class="sc">
+                            <div class="scl"></div>
+                        </div>
+                        <div
+                            style="background:rgba(30,36,53,0.5);border-radius:12px;padding:12px;display:flex;align-items:center;gap:12px;">
+                            <span>&#128295;</span><span style="color:#cbd5e1;font-size:14px;">Fixes code &rarr; Runs
+                                tests again</span>
+                        </div>
+                        <div class="sc">
+                            <div class="scl"></div>
+                        </div>
+                        <div
+                            style="background:rgba(30,36,53,0.5);border-radius:12px;padding:12px;display:flex;align-items:center;gap:12px;">
+                            <span>&#128257;</span><span style="color:#cbd5e1;font-size:14px;">Still failing? Fixes
+                                again...</span>
+                        </div>
+                        <div class="sc">
+                            <div class="scl"
+                                style="background:linear-gradient(to bottom,#10b981,rgba(16,185,129,0.3));"></div>
+                        </div>
+                        <div
+                            style="background:rgba(52,211,153,0.1);border:1px solid rgba(52,211,153,0.3);border-radius:12px;padding:12px;display:flex;align-items:center;gap:12px;">
+                            <span>&#9989;</span><span style="color:#34d399;font-weight:700;font-size:14px;">All tests
+                                pass &rarr; STOPS automatically</span>
+                        </div>
+                    </div>
+                    <div
+                        style="margin-top:24px;background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.2);border-radius:12px;padding:12px;text-align:center;">
+                        <span style="color:#34d399;font-weight:700;">&#128640; Claude IS the loop &mdash; autonomous,
+                            self-correcting</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION 3: HOW IT WORKS -->
+    <section id="how-it-works" style="padding:96px 24px;">
+        <div style="max-width:1200px;margin:0 auto;">
+            <div class="se" style="text-align:center;margin-bottom:64px;">
+                <span class="badge"
+                    style="background:rgba(124,58,237,0.1);color:#a78bfa;border:1px solid rgba(124,58,237,0.3);margin-bottom:16px;display:inline-flex;">&#9881;&#65039;
+                    Internals</span>
+                <h2 style="font-size:clamp(2rem,4vw,2.5rem);font-weight:900;color:white;margin-bottom:16px;">How Claude
+                    Thinks &amp; Loops Internally</h2>
+                <p style="color:#94a3b8;max-width:480px;margin:0 auto;">The repeating Think &rarr; Use Tool &rarr;
+                    Observe cycle at the core.</p>
+            </div>
+
+            <div class="glass se" style="border-radius:20px;padding:32px;margin-bottom:48px;">
+                <div
+                    style="text-align:center;font-size:11px;color:#64748b;margin-bottom:32px;text-transform:uppercase;letter-spacing:0.15em;">
+                    High Level Design &mdash; Internal Tool-Use Loop</div>
+                <div style="display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:16px;">
+                    <div style="text-align:center;">
+                        <div class="gradient-brand neon aps"
+                            style="width:140px;height:140px;border-radius:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:white;position:relative;">
+                            <div style="font-size:2.5rem;margin-bottom:4px;">&#129504;</div>
+                            <div style="font-weight:700;font-size:14px;">Think</div>
+                            <div style="font-size:11px;color:#bfdbfe;margin-top:2px;">Reason &amp; Plan</div>
+                            <div
+                                style="position:absolute;top:-8px;right:-8px;width:20px;height:20px;border-radius:50%;background:#22c55e;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#14532d;">
+                                1</div>
+                        </div>
+                        <div style="color:#64748b;font-size:11px;margin-top:8px;">Context analysis</div>
+                    </div>
+                    <svg width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="#527bff">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                    </svg>
+                    <div style="text-align:center;">
+                        <div
+                            style="width:140px;height:140px;border-radius:20px;background:linear-gradient(135deg,#7c3aed,#a855f7);display:flex;flex-direction:column;align-items:center;justify-content:center;color:white;position:relative;box-shadow:0 10px 30px rgba(124,58,237,0.3);">
+                            <div style="font-size:2.5rem;margin-bottom:4px;">&#128295;</div>
+                            <div style="font-weight:700;font-size:14px;">Use Tool</div>
+                            <div style="font-size:11px;color:#e9d5ff;margin-top:2px;">Edit / Run / Read</div>
+                            <div
+                                style="position:absolute;top:-8px;right:-8px;width:20px;height:20px;border-radius:50%;background:#22c55e;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#14532d;">
+                                2</div>
+                        </div>
+                        <div style="color:#64748b;font-size:11px;margin-top:8px;">File ops, commands</div>
+                    </div>
+                    <svg width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="#527bff">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                    </svg>
+                    <div style="text-align:center;">
+                        <div
+                            style="width:140px;height:140px;border-radius:20px;background:linear-gradient(135deg,#d97706,#f59e0b);display:flex;flex-direction:column;align-items:center;justify-content:center;color:white;position:relative;box-shadow:0 10px 30px rgba(217,119,6,0.3);">
+                            <div style="font-size:2.5rem;margin-bottom:4px;">&#128065;&#65039;</div>
+                            <div style="font-weight:700;font-size:14px;">Observe</div>
+                            <div style="font-size:11px;color:#fef3c7;margin-top:2px;">Read Output</div>
+                            <div
+                                style="position:absolute;top:-8px;right:-8px;width:20px;height:20px;border-radius:50%;background:#22c55e;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#14532d;">
+                                3</div>
+                        </div>
+                        <div style="color:#64748b;font-size:11px;margin-top:8px;">Output analysis</div>
+                    </div>
+                    <svg width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="#34d399">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    <div style="text-align:center;">
+                        <div
+                            style="width:140px;height:140px;border-radius:20px;background:linear-gradient(135deg,#059669,#10b981);display:flex;flex-direction:column;align-items:center;justify-content:center;color:white;position:relative;box-shadow:0 10px 30px rgba(5,150,105,0.3);">
+                            <div style="font-size:2.5rem;margin-bottom:4px;">&#128256;</div>
+                            <div style="font-weight:700;font-size:14px;">Decide</div>
+                            <div style="font-size:11px;color:#d1fae5;margin-top:2px;">Next Action</div>
+                            <div
+                                style="position:absolute;top:-8px;right:-8px;width:20px;height:20px;border-radius:50%;background:#22c55e;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#14532d;">
+                                4</div>
+                        </div>
+                        <div style="color:#64748b;font-size:11px;margin-top:8px;">Continue or stop</div>
+                    </div>
+                </div>
+                <div style="margin-top:24px;text-align:center;">
+                    <span class="badge"
+                        style="background:rgba(41,82,243,0.1);color:#86a8ff;border:1px solid rgba(41,82,243,0.3);">&#8635;
+                        Repeats until goal_not_complete = false</span>
+                </div>
+            </div>
+
+            <div class="glass se" style="border-radius:20px;padding:32px;">
+                <h3 style="font-size:1.1rem;font-weight:700;color:white;margin-bottom:24px;text-align:center;">HLD
+                    &mdash; Simple Prompt vs Loop Engineering</h3>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:32px;">
+                    <div>
+                        <div style="text-align:center;margin-bottom:16px;"><span class="badge"
+                                style="background:rgba(244,63,94,0.1);color:#fb7185;border:1px solid rgba(244,63,94,0.3);">Simple
+                                Prompt</span></div>
+                        <div class="code-block">
+                            <pre><span class="cs">"Write feature"</span>
+
+<span class="cc">Claude receives:</span>
+<span class="co">No context defined</span>
+<span class="co">No constraints set</span>
+<span class="co">No verification steps</span>
+<span class="co">No stop condition</span>
+
+<span class="cc">Result:</span>
+<span class="co">Claude guesses and stops early</span></pre>
+                        </div>
+                    </div>
+                    <div>
+                        <div style="text-align:center;margin-bottom:16px;"><span class="badge"
+                                style="background:rgba(52,211,153,0.1);color:#34d399;border:1px solid rgba(52,211,153,0.3);">Loop
+                                Engineering</span></div>
+                        <div class="code-block">
+                            <pre><span class="cv">Goal</span>         <span class="cc">what to achieve</span>
+<span class="cv">Constraints</span>  <span class="cc">how to behave</span>
+<span class="cv">Verification</span> <span class="cc">how to self-check</span>
+<span class="cv">Repeat</span>       <span class="cc">fix until passing</span>
+<span class="cv">Stop</span>         <span class="cc">clear exit condition</span>
+
+<span class="cc">Result:</span>
+<span class="cg">Claude behaves like senior teammate</span></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION 4: FRAMEWORK -->
+    <section id="framework" style="padding:96px 24px;background:rgba(8,11,16,0.8);">
+        <div style="max-width:1200px;margin:0 auto;">
+            <div class="se" style="text-align:center;margin-bottom:64px;">
+                <span class="badge"
+                    style="background:rgba(245,158,11,0.1);color:#fbbf24;border:1px solid rgba(245,158,11,0.3);margin-bottom:16px;display:inline-flex;">&#127959;&#65039;
+                    Framework</span>
+                <h2 style="font-size:clamp(2rem,4vw,2.5rem);font-weight:900;color:white;margin-bottom:16px;">The 4-Part
+                    Loop Framework</h2>
+                <p style="color:#94a3b8;max-width:480px;margin:0 auto;">Click each part to see detailed breakdown and
+                    examples.</p>
+            </div>
+
+            <div class="se" style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:40px;">
+                <button class="tab-btn active" onclick="switchTab(this,'context')">&#9312; Context</button>
+                <button class="tab-btn" onclick="switchTab(this,'execution')">&#9313; Execution Protocol</button>
+                <button class="tab-btn" onclick="switchTab(this,'critic')">&#9314; Internal Critic</button>
+                <button class="tab-btn" onclick="switchTab(this,'exit')">&#9315; Exit Condition</button>
+            </div>
+
+            <div class="se">
+                <!-- Context -->
+                <div id="panel-context" class="tab-panel">
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:32px;">
+                        <div>
+                            <h3 style="font-size:1.4rem;font-weight:700;color:white;margin-bottom:12px;">&#9312; Context
+                                &mdash; Tell Claude WHO it is</h3>
+                            <p style="color:#94a3b8;margin-bottom:24px;">Without context Claude guesses. With context
+                                Claude behaves like your <strong style="color:white;">senior teammate</strong>.</p>
+                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px;">
+                                <div class="compare-card" style="text-align:center;border-color:rgba(244,63,94,0.2);">
+                                    <div style="font-weight:700;font-size:13px;color:#fb7185;margin-bottom:8px;">Without
+                                        Context</div>
+                                    <div style="color:#94a3b8;font-size:13px;">Claude guesses your stack, may break
+                                        contracts</div>
+                                </div>
+                                <div class="compare-card" style="text-align:center;border-color:rgba(52,211,153,0.2);">
+                                    <div style="font-weight:700;font-size:13px;color:#34d399;margin-bottom:8px;">With
+                                        Context</div>
+                                    <div style="color:#94a3b8;font-size:13px;">Claude knows role and stack &mdash; acts
+                                        like a senior dev</div>
+                                </div>
+                            </div>
+                            <div>
+                                <span class="fp">&#128100; Role definition</span><span class="fp">&#127959; Project
+                                    name</span>
+                                <span class="fp">&#9749; Java 21</span><span class="fp">&#127807; Spring Boot</span>
+                                <span class="fp">&#128024; PostgreSQL</span><span class="fp">&#127344; Angular</span>
+                                <span class="fp">&#128220; API contract rules</span>
+                            </div>
+                        </div>
+                        <div class="code-block">
+                            <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
+                                <div style="width:12px;height:12px;border-radius:50%;background:#ef4444;"></div>
+                                <div style="width:12px;height:12px;border-radius:50%;background:#f59e0b;"></div>
+                                <div style="width:12px;height:12px;border-radius:50%;background:#22c55e;"></div>
+                                <span style="color:#64748b;font-size:12px;margin-left:8px;">CLAUDE.md &mdash; Context
+                                    Block</span>
+                            </div>
+                            <pre><span class="cc">## Your Identity</span>
+<span class="cs">You are a Senior Spring Boot Engineer.</span>
+
+<span class="cc">## Project</span>
+<span class="cv">Name:</span>      <span class="cs">Employee Monitoring System</span>
+<span class="cv">Language:</span> <span class="cs">Java 21</span>
+<span class="cv">Backend:</span>  <span class="cs">Spring Boot 3.x</span>
+<span class="cv">Database:</span> <span class="cs">PostgreSQL</span>
+<span class="cv">Frontend:</span> <span class="cs">Angular 17+</span>
+
+<span class="cc">## Hard Rules</span>
+<span class="co">Never change existing API contracts</span>
+<span class="co">Never delete migration files</span>
+<span class="cg">Always maintain backward compatibility</span>
+<span class="cg">Follow existing code patterns</span></pre>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Execution -->
+                <div id="panel-execution" class="tab-panel hidden">
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:32px;">
+                        <div>
+                            <h3 style="font-size:1.4rem;font-weight:700;color:white;margin-bottom:12px;">&#9313;
+                                Execution Protocol &mdash; Algorithm, Not a Wish</h3>
+                            <p style="color:#94a3b8;margin-bottom:24px;">Don't say <em>"Build dashboard"</em>. Give
+                                Claude an <strong style="color:white;">algorithm to follow</strong>.</p>
+                            <div style="display:flex;flex-direction:column;gap:8px;">
+                                <div class="tl-item">
+                                    <div class="tl-dot"><span
+                                            style="color:#527bff;font-size:10px;font-weight:700;">1</span></div>
+                                    <div class="glass" style="border-radius:12px;padding:12px;">
+                                        <div style="color:white;font-weight:600;font-size:14px;">Analyze existing code
+                                        </div>
+                                        <div style="color:#64748b;font-size:12px;margin-top:2px;">Understand before
+                                            touching anything</div>
+                                    </div>
+                                </div>
+                                <div class="tl-item">
+                                    <div class="tl-dot"><span
+                                            style="color:#527bff;font-size:10px;font-weight:700;">2</span></div>
+                                    <div class="glass" style="border-radius:12px;padding:12px;">
+                                        <div style="color:white;font-weight:600;font-size:14px;">Find reusable
+                                            components</div>
+                                        <div style="color:#64748b;font-size:12px;margin-top:2px;">Don't duplicate
+                                            existing code</div>
+                                    </div>
+                                </div>
+                                <div class="tl-item">
+                                    <div class="tl-dot"><span
+                                            style="color:#527bff;font-size:10px;font-weight:700;">3</span></div>
+                                    <div class="glass" style="border-radius:12px;padding:12px;">
+                                        <div style="color:white;font-weight:600;font-size:14px;">Implement feature</div>
+                                        <div style="color:#64748b;font-size:12px;margin-top:2px;">Following patterns and
+                                            constraints</div>
+                                    </div>
+                                </div>
+                                <div class="tl-item">
+                                    <div class="tl-dot"><span
+                                            style="color:#527bff;font-size:10px;font-weight:700;">4</span></div>
+                                    <div class="glass" style="border-radius:12px;padding:12px;">
+                                        <div style="color:white;font-weight:600;font-size:14px;">Run all tests</div>
+                                        <div style="color:#64748b;font-size:12px;margin-top:2px;">Unit + Integration
+                                            tests</div>
+                                    </div>
+                                </div>
+                                <div class="tl-item">
+                                    <div class="tl-dot"><span
+                                            style="color:#527bff;font-size:10px;font-weight:700;">5</span></div>
+                                    <div class="glass" style="border-radius:12px;padding:12px;">
+                                        <div style="color:white;font-weight:600;font-size:14px;">Fix errors
+                                            automatically</div>
+                                        <div style="color:#64748b;font-size:12px;margin-top:2px;">Self-correcting loop
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="tl-item" style="padding-left:40px;">
+                                    <div class="tl-dot" style="border-color:#34d399;"><span
+                                            style="color:#34d399;font-size:10px;font-weight:700;">6</span></div>
+                                    <div class="glass"
+                                        style="border-radius:12px;padding:12px;border-color:rgba(52,211,153,0.3);">
+                                        <div style="color:#34d399;font-weight:600;font-size:14px;">Commit only when all
+                                            tests pass</div>
+                                        <div style="color:#64748b;font-size:12px;margin-top:2px;">Quality gate before
+                                            commit</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="code-block">
+                            <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
+                                <div style="width:12px;height:12px;border-radius:50%;background:#ef4444;"></div>
+                                <div style="width:12px;height:12px;border-radius:50%;background:#f59e0b;"></div>
+                                <div style="width:12px;height:12px;border-radius:50%;background:#22c55e;"></div>
+                                <span style="color:#64748b;font-size:12px;margin-left:8px;">Execution Protocol</span>
+                            </div>
+                            <pre><span class="cc">## Execution Protocol</span>
+
+<span class="cv">Step 1:</span> <span class="cf">analyzeCodebase</span>()
+  <span class="cc">Read all relevant files</span>
+  <span class="cc">Identify patterns used</span>
+
+<span class="cv">Step 2:</span> <span class="cf">findReusables</span>()
+  <span class="cc">Map existing components</span>
+
+<span class="cv">Step 3:</span> <span class="cf">implement</span>()
+  <span class="cc">Follow project patterns</span>
+
+<span class="cv">Step 4:</span> <span class="cf">runTests</span>()
+  <span class="ck">if</span> (failures) {
+    <span class="cf">fixAndRetry</span>()  <span class="cc">THE LOOP</span>
+  }
+
+<span class="cv">Step 5:</span> <span class="cf">commitOnlyWhenClean</span>()</pre>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Critic -->
+                <div id="panel-critic" class="tab-panel hidden">
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:32px;">
+                        <div>
+                            <h3 style="font-size:1.4rem;font-weight:700;color:white;margin-bottom:12px;">&#9314;
+                                Internal Critic &mdash; Self-Improvement Loop</h3>
+                            <p style="color:#94a3b8;margin-bottom:24px;">Tell Claude to review its own work. One of the
+                                most <strong style="color:white;">powerful techniques</strong>.</p>
+                            <div style="display:flex;flex-direction:column;gap:12px;">
+                                <div
+                                    style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);border-radius:12px;padding:16px;">
+                                    <div style="font-weight:700;font-size:13px;color:#fbbf24;margin-bottom:12px;">
+                                        &#128269; Review Checklist</div>
+                                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                                        <div
+                                            style="color:#cbd5e1;font-size:13px;display:flex;align-items:center;gap:6px;">
+                                            <span style="color:#fbbf24;">&#9889;</span>Performance
+                                        </div>
+                                        <div
+                                            style="color:#cbd5e1;font-size:13px;display:flex;align-items:center;gap:6px;">
+                                            <span style="color:#fbbf24;">&#128221;</span>Naming
+                                        </div>
+                                        <div
+                                            style="color:#cbd5e1;font-size:13px;display:flex;align-items:center;gap:6px;">
+                                            <span style="color:#fbbf24;">&#128274;</span>Security
+                                        </div>
+                                        <div
+                                            style="color:#cbd5e1;font-size:13px;display:flex;align-items:center;gap:6px;">
+                                            <span style="color:#fbbf24;">&#10024;</span>Clean Code
+                                        </div>
+                                        <div
+                                            style="color:#cbd5e1;font-size:13px;display:flex;align-items:center;gap:6px;">
+                                            <span style="color:#fbbf24;">&#9974;</span>Edge Cases
+                                        </div>
+                                        <div
+                                            style="color:#cbd5e1;font-size:13px;display:flex;align-items:center;gap:6px;">
+                                            <span style="color:#fbbf24;">&#128218;</span>Docs
+                                        </div>
+                                    </div>
+                                </div>
+                                <div
+                                    style="background:rgba(41,82,243,0.08);border:1px solid rgba(41,82,243,0.2);border-radius:12px;padding:16px;">
+                                    <div style="font-weight:700;font-size:13px;color:#527bff;margin-bottom:8px;">
+                                        &#128202; Self-Scoring</div>
+                                    <div style="display:flex;align-items:center;gap:12px;margin-bottom:4px;">
+                                        <span style="color:#94a3b8;font-size:12px;width:60px;">Score 1-10</span>
+                                        <div
+                                            style="flex:1;height:8px;border-radius:999px;overflow:hidden;background:rgba(30,36,53,0.8);">
+                                            <div
+                                                style="width:90%;height:100%;border-radius:999px;background:linear-gradient(to right,#f43f5e,#f59e0b,#10b981);">
+                                            </div>
+                                        </div>
+                                        <span style="color:#94a3b8;font-size:12px;">9+</span>
+                                    </div>
+                                    <div style="color:#94a3b8;font-size:12px;">If below 9 &rarr; Improve &amp; re-score
+                                    </div>
+                                </div>
+                                <div
+                                    style="background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.2);border-radius:12px;padding:16px;">
+                                    <div style="color:#34d399;font-weight:700;font-size:13px;">Claude becomes
+                                        self-optimizing</div>
+                                    <div style="color:#94a3b8;font-size:12px;margin-top:4px;">Pushes to excellence
+                                        &mdash; no more "good enough"</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="code-block">
+                            <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
+                                <div style="width:12px;height:12px;border-radius:50%;background:#ef4444;"></div>
+                                <div style="width:12px;height:12px;border-radius:50%;background:#f59e0b;"></div>
+                                <div style="width:12px;height:12px;border-radius:50%;background:#22c55e;"></div>
+                                <span style="color:#64748b;font-size:12px;margin-left:8px;">Internal Critic Block</span>
+                            </div>
+                            <pre><span class="cc">## Internal Critic Protocol</span>
+
+<span class="ck">after</span> <span class="cf">everyImplementation</span>() {
+
+  <span class="cv">score</span> = <span class="cf">reviewYourOwnWork</span>({
+    performance: <span class="cs">"Is it optimal?"</span>,
+    naming:      <span class="cs">"Are names clear?"</span>,
+    security:    <span class="cs">"Vulnerabilities?"</span>,
+    cleanCode:   <span class="cs">"SOLID, DRY, KISS?"</span>,
+    edgeCases:   <span class="cs">"All cases handled?"</span>
+  })
+
+  <span class="ck">if</span> (<span class="cv">score</span> &lt; <span class="cn">9</span>) {
+    <span class="cf">improve</span>()
+    <span class="cf">reviewAgain</span>()  <span class="cc">inner critic loop</span>
+  }
+}</pre>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Exit -->
+                <div id="panel-exit" class="tab-panel hidden">
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:32px;">
+                        <div>
+                            <h3 style="font-size:1.4rem;font-weight:700;color:white;margin-bottom:12px;">&#9315; Exit
+                                Condition &mdash; Know When to STOP</h3>
+                            <p style="color:#94a3b8;margin-bottom:24px;">Without an exit Claude can loop <strong
+                                    style="color:#fb7185;">forever</strong>. Define clear stopping criteria.</p>
+                            <div style="display:flex;flex-direction:column;gap:12px;">
+                                <div
+                                    style="background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.2);border-radius:12px;padding:16px;">
+                                    <div style="color:#34d399;font-weight:700;font-size:13px;margin-bottom:12px;">
+                                        &#9989; Success Conditions (ALL must pass)</div>
+                                    <div style="display:flex;flex-direction:column;gap:8px;">
+                                        <div style="display:flex;align-items:center;gap:12px;">
+                                            <div
+                                                style="width:20px;height:20px;border-radius:6px;background:rgba(52,211,153,0.2);color:#34d399;font-size:12px;display:flex;align-items:center;justify-content:center;">
+                                                &#10003;</div><span style="color:#cbd5e1;font-size:14px;">Build
+                                                passes</span>
+                                        </div>
+                                        <div style="display:flex;align-items:center;gap:12px;">
+                                            <div
+                                                style="width:20px;height:20px;border-radius:6px;background:rgba(52,211,153,0.2);color:#34d399;font-size:12px;display:flex;align-items:center;justify-content:center;">
+                                                &#10003;</div><span style="color:#cbd5e1;font-size:14px;">All tests
+                                                pass</span>
+                                        </div>
+                                        <div style="display:flex;align-items:center;gap:12px;">
+                                            <div
+                                                style="width:20px;height:20px;border-radius:6px;background:rgba(52,211,153,0.2);color:#34d399;font-size:12px;display:flex;align-items:center;justify-content:center;">
+                                                &#10003;</div><span style="color:#cbd5e1;font-size:14px;">No
+                                                TypeScript/Java errors</span>
+                                        </div>
+                                        <div style="display:flex;align-items:center;gap:12px;">
+                                            <div
+                                                style="width:20px;height:20px;border-radius:6px;background:rgba(52,211,153,0.2);color:#34d399;font-size:12px;display:flex;align-items:center;justify-content:center;">
+                                                &#10003;</div><span style="color:#cbd5e1;font-size:14px;">Linter clean
+                                                (no warnings)</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div
+                                    style="background:rgba(244,63,94,0.08);border:1px solid rgba(244,63,94,0.2);border-radius:12px;padding:16px;">
+                                    <div style="color:#fb7185;font-weight:700;font-size:13px;margin-bottom:8px;">
+                                        &#128721; Safety Net</div>
+                                    <div style="color:#cbd5e1;font-size:14px;">Maximum <strong style="color:white;">5
+                                            iterations</strong> &mdash; then stop and report</div>
+                                </div>
+                                <div
+                                    style="background:rgba(41,82,243,0.08);border:1px solid rgba(41,82,243,0.2);border-radius:12px;padding:16px;">
+                                    <div style="color:#527bff;font-weight:700;font-size:13px;margin-bottom:8px;">
+                                        &#128221; On Stop</div>
+                                    <div style="color:#cbd5e1;font-size:14px;">Summarize all changes, what passed, what
+                                        needs attention</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="code-block">
+                            <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
+                                <div style="width:12px;height:12px;border-radius:50%;background:#ef4444;"></div>
+                                <div style="width:12px;height:12px;border-radius:50%;background:#f59e0b;"></div>
+                                <div style="width:12px;height:12px;border-radius:50%;background:#22c55e;"></div>
+                                <span style="color:#64748b;font-size:12px;margin-left:8px;">Exit Condition Block</span>
+                            </div>
+                            <pre><span class="cv">iteration</span> = <span class="cn">0</span>
+<span class="cv">MAX</span> = <span class="cn">5</span>
+
+<span class="ck">while</span> (<span class="cv">iteration</span>++ &lt; <span class="cv">MAX</span>) {
+
+  <span class="cf">implement</span>()
+  <span class="cf">verify</span>()
+
+  <span class="ck">if</span> (
+    <span class="cf">buildPasses</span>()   &amp;&amp;
+    <span class="cf">testsPasses</span>()   &amp;&amp;
+    <span class="cf">noLintErrors</span>() &amp;&amp;
+    <span class="cf">noTypeErrors</span>()
+  ) {
+    <span class="cg">// SUCCESS - all conditions met</span>
+    <span class="cf">summarizeChanges</span>()
+    <span class="ck">break</span>  <span class="cc">STOP</span>
+  }
+}
+
+<span class="ck">if</span> (<span class="cv">iteration</span> &gt;= <span class="cv">MAX</span>) {
+  <span class="cf">reportStatus</span>()  <span class="cc">safety exit</span>
+}</pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Framework summary -->
+            <div class="glass se" style="border-radius:20px;padding:32px;margin-top:64px;">
+                <h3 style="font-size:1.1rem;font-weight:700;color:white;margin-bottom:32px;text-align:center;">4-Part
+                    Framework &mdash; HLD Overview</h3>
+                <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:24px;">
+                    <div style="text-align:center;">
+                        <div class="gradient-brand"
+                            style="width:64px;height:64px;border-radius:16px;display:flex;align-items:center;justify-content:center;color:white;font-weight:900;font-size:1.5rem;margin:0 auto 12px;box-shadow:0 10px 30px rgba(41,82,243,0.3);">
+                            &#9312;</div>
+                        <div style="color:white;font-weight:700;font-size:14px;margin-bottom:4px;">Context</div>
+                        <div style="color:#64748b;font-size:12px;">Role, stack, rules, constraints</div>
+                    </div>
+                    <div style="text-align:center;">
+                        <div
+                            style="width:64px;height:64px;border-radius:16px;background:linear-gradient(135deg,#7c3aed,#a855f7);display:flex;align-items:center;justify-content:center;color:white;font-weight:900;font-size:1.5rem;margin:0 auto 12px;box-shadow:0 10px 30px rgba(124,58,237,0.3);">
+                            &#9313;</div>
+                        <div style="color:white;font-weight:700;font-size:14px;margin-bottom:4px;">Execution</div>
+                        <div style="color:#64748b;font-size:12px;">Step-by-step algorithm</div>
+                    </div>
+                    <div style="text-align:center;">
+                        <div
+                            style="width:64px;height:64px;border-radius:16px;background:linear-gradient(135deg,#d97706,#f59e0b);display:flex;align-items:center;justify-content:center;color:white;font-weight:900;font-size:1.5rem;margin:0 auto 12px;box-shadow:0 10px 30px rgba(217,119,6,0.3);">
+                            &#9314;</div>
+                        <div style="color:white;font-weight:700;font-size:14px;margin-bottom:4px;">Critic</div>
+                        <div style="color:#64748b;font-size:12px;">Self-review &amp; score (target 9+)</div>
+                    </div>
+                    <div style="text-align:center;">
+                        <div
+                            style="width:64px;height:64px;border-radius:16px;background:linear-gradient(135deg,#059669,#10b981);display:flex;align-items:center;justify-content:center;color:white;font-weight:900;font-size:1.5rem;margin:0 auto 12px;box-shadow:0 10px 30px rgba(5,150,105,0.3);">
+                            &#9315;</div>
+                        <div style="color:white;font-weight:700;font-size:14px;margin-bottom:4px;">Exit</div>
+                        <div style="color:#64748b;font-size:12px;">Success criteria + max iterations</div>
+                    </div>
+                </div>
+                <div class="data-flow-line" style="margin-top:32px;border-radius:999px;"></div>
+                <div style="text-align:center;margin-top:16px;color:#64748b;font-size:14px;">Context feeds &rarr;
+                    Execution runs &rarr; Critic verifies &rarr; Exit stops</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION 5: METHODS -->
+    <section id="methods" style="padding:96px 24px;">
+        <div style="max-width:1200px;margin:0 auto;">
+            <div class="se" style="text-align:center;margin-bottom:64px;">
+                <span class="badge"
+                    style="background:rgba(16,185,129,0.1);color:#34d399;border:1px solid rgba(16,185,129,0.3);margin-bottom:16px;display:inline-flex;">&#128736;&#65039;
+                    Implementation</span>
+                <h2 style="font-size:clamp(2rem,4vw,2.5rem);font-weight:900;color:white;margin-bottom:16px;">5 Methods
+                    to Use Loops in VS Code</h2>
+                <p style="color:#94a3b8;max-width:480px;margin:0 auto;">Click any method card to see implementation
+                    details.</p>
+            </div>
+            <div class="se" style="display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-bottom:32px;">
+                <div class="method-card selected" id="card-method1" onclick="selectMethod(this,'method1')">
+                    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+                        <div class="gradient-brand"
+                            style="width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:18px;">
+                            1</div>
+                        <div>
+                            <span class="badge"
+                                style="background:rgba(41,82,243,0.15);color:#86a8ff;margin-bottom:4px;display:inline-flex;">&#11088;
+                                BEST</span>
+                            <div style="color:white;font-weight:700;">Natural Language</div>
+                        </div>
+                    </div>
+                    <p style="color:#94a3b8;font-size:14px;">Tell Claude your goal, constraints, and exit condition in
+                        plain English. No setup needed.</p>
+                </div>
+                <div class="method-card" id="card-method2" onclick="selectMethod(this,'method2')">
+                    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+                        <div
+                            style="width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#0891b2,#06b6d4);display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:18px;">
+                            2</div>
+                        <div>
+                            <div style="color:white;font-weight:700;">CLAUDE.md</div>
+                            <div style="color:#64748b;font-size:12px;">Project memory file</div>
+                        </div>
+                    </div>
+                    <p style="color:#94a3b8;font-size:14px;">Define loop behavior in CLAUDE.md so every conversation
+                        inherits your workflow automatically.</p>
+                </div>
+                <div class="method-card" id="card-method3" onclick="selectMethod(this,'method3')">
+                    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+                        <div
+                            style="width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#7c3aed,#a855f7);display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:18px;">
+                            3</div>
+                        <div>
+                            <span class="badge"
+                                style="background:rgba(124,58,237,0.15);color:#a78bfa;margin-bottom:4px;display:inline-flex;">Recommended</span>
+                            <div style="color:white;font-weight:700;">Reusable Skills</div>
+                        </div>
+                    </div>
+                    <p style="color:#94a3b8;font-size:14px;">Create skill files for Angular, Spring Boot, React &mdash;
+                        reuse across every project.</p>
+                </div>
+                <div class="method-card" id="card-method4" onclick="selectMethod(this,'method4')">
+                    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+                        <div
+                            style="width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#d97706,#f59e0b);display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:18px;">
+                            4</div>
+                        <div>
+                            <div style="color:white;font-weight:700;">Hooks</div>
+                            <div style="color:#64748b;font-size:12px;">Automated triggers</div>
+                        </div>
+                    </div>
+                    <p style="color:#94a3b8;font-size:14px;">Automatically run tests, format, lint after every edit
+                        &mdash; without asking each time.</p>
+                </div>
+                <div class="method-card" id="card-method5" onclick="selectMethod(this,'method5')">
+                    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+                        <div
+                            style="width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#059669,#10b981);display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:18px;">
+                            5</div>
+                        <div>
+                            <div style="color:white;font-weight:700;">Sub-Agents</div>
+                            <div style="color:#64748b;font-size:12px;">Maker vs Checker</div>
+                        </div>
+                    </div>
+                    <p style="color:#94a3b8;font-size:14px;">Multiple Claude instances &mdash; Writer, Reviewer,
+                        Security Checker &mdash; for maximum quality.</p>
+                </div>
+            </div>
+
+            <!-- Method Detail Panel -->
+            <div class="glass se" style="border-radius:20px;padding:32px;">
+                <div id="detail-method1">
+                    <h3 style="font-size:1.25rem;font-weight:700;color:white;margin-bottom:24px;">&#11088; Method 1
+                        &mdash; Natural Language Loop Prompt</h3>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:32px;">
+                        <div>
+                            <p style="color:#94a3b8;font-size:14px;margin-bottom:16px;">No special command needed. Give
+                                Claude a well-structured goal in natural language.</p>
+                            <div
+                                style="background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.2);border-radius:12px;padding:16px;">
+                                <div style="color:#34d399;font-weight:700;font-size:12px;margin-bottom:8px;">WHY IT
+                                    WORKS</div>
+                                <div style="color:#cbd5e1;font-size:14px;">Claude Code's internal loop already runs.
+                                    Your natural language defines the goal and when to stop.</div>
+                            </div>
+                        </div>
+                        <div class="code-block">
+                            <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
+                                <div style="width:12px;height:12px;border-radius:50%;background:#ef4444;"></div>
+                                <div style="width:12px;height:12px;border-radius:50%;background:#f59e0b;"></div>
+                                <div style="width:12px;height:12px;border-radius:50%;background:#22c55e;"></div>
+                            </div>
+                            <pre><span class="cc">// Paste directly into Claude Code</span>
+
+<span class="cs">Your goal is to implement JWT authentication.</span>
+
+<span class="cs">Keep working until ALL of these are true:</span>
+<span class="cg">Build succeeds</span>
+<span class="cg">Tests pass</span>
+<span class="cg">No lint errors</span>
+<span class="cg">API documentation updated</span>
+
+<span class="cs">After every implementation:</span>
+<span class="cn">1.</span> Run tests
+<span class="cn">2.</span> Review your own code
+<span class="cn">3.</span> Fix issues
+
+<span class="ck">Repeat.</span>
+<span class="cs">Stop only when every condition is met.</span>
+<span class="cv">Maximum 5 iterations.</span></pre>
+                        </div>
+                    </div>
+                </div>
+                <div id="detail-method2" class="hidden">
+                    <h3 style="font-size:1.25rem;font-weight:700;color:white;margin-bottom:24px;">&#128196; Method 2
+                        &mdash; CLAUDE.md Project Memory</h3>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:32px;">
+                        <div>
+                            <p style="color:#94a3b8;font-size:14px;margin-bottom:16px;">Create CLAUDE.md at the project
+                                root. Every conversation inherits these instructions automatically.</p>
+                            <div
+                                style="background:rgba(41,82,243,0.08);border:1px solid rgba(41,82,243,0.2);border-radius:12px;padding:12px;margin-bottom:12px;">
+                                <div style="color:#527bff;font-weight:700;font-size:12px;margin-bottom:4px;">File
+                                    Location</div>
+                                <code
+                                    style="color:#cbd5e1;font-size:12px;font-family:'Fira Code',monospace;">D:\Dairy management\CLAUDE.md</code>
+                            </div>
+                            <div
+                                style="background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.2);border-radius:12px;padding:12px;">
+                                <div style="color:#34d399;font-weight:700;font-size:12px;margin-bottom:4px;">BENEFIT
+                                </div>
+                                <div style="color:#cbd5e1;font-size:14px;">Set once, inherit everywhere. No repeating
+                                    instructions each session.</div>
+                            </div>
+                        </div>
+                        <div class="code-block">
+                            <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
+                                <div style="width:12px;height:12px;border-radius:50%;background:#ef4444;"></div>
+                                <div style="width:12px;height:12px;border-radius:50%;background:#f59e0b;"></div>
+                                <div style="width:12px;height:12px;border-radius:50%;background:#22c55e;"></div><span
+                                    style="color:#64748b;font-size:12px;margin-left:8px;">CLAUDE.md</span>
+                            </div>
+                            <pre><span class="cc">## Always</span>
+<span class="cn">1.</span> Run Tests
+<span class="cn">2.</span> Review Code
+<span class="cn">3.</span> Fix Errors
+<span class="cn">4.</span> Repeat
+
+<span class="cc">## Until</span>
+<span class="cg">Build Passes</span>
+<span class="cg">Tests Pass</span>
+<span class="cg">Lint Clean</span>
+
+<span class="cc">## Never</span>
+<span class="co">Break API contracts</span>
+<span class="co">Delete migration files</span>
+
+<span class="cc">## Maximum iterations: 5</span></pre>
+                        </div>
+                    </div>
+                </div>
+                <div id="detail-method3" class="hidden">
+                    <h3 style="font-size:1.25rem;font-weight:700;color:white;margin-bottom:24px;">&#129513; Method 3
+                        &mdash; Reusable Skills (Recommended for You)</h3>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:32px;">
+                        <div>
+                            <p style="color:#94a3b8;font-size:14px;margin-bottom:16px;">Since you work on Angular +
+                                Spring Boot + React + Node.js, create reusable skill files per tech stack.</p>
+                            <div
+                                style="background:rgba(124,58,237,0.08);border:1px solid rgba(124,58,237,0.2);border-radius:12px;padding:16px;">
+                                <div style="color:#a78bfa;font-weight:700;font-size:12px;margin-bottom:8px;">Skills
+                                    Directory Structure</div>
+                                <pre style="font-family:'Fira Code',monospace;font-size:12px;color:#94a3b8;">.agents/skills/
+  SpringBootLoop.md
+  AngularLoop.md
+  ReactLoop.md
+  NodeLoop.md</pre>
+                            </div>
+                        </div>
+                        <div class="code-block">
+                            <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
+                                <div style="width:12px;height:12px;border-radius:50%;background:#ef4444;"></div>
+                                <div style="width:12px;height:12px;border-radius:50%;background:#f59e0b;"></div>
+                                <div style="width:12px;height:12px;border-radius:50%;background:#22c55e;"></div><span
+                                    style="color:#64748b;font-size:12px;margin-left:8px;">SpringBootLoop.md</span>
+                            </div>
+                            <pre><span class="cc">---</span>
+<span class="cv">name:</span> SpringBootLoop
+<span class="cv">description:</span> <span class="cs">Backend loop
+  for Spring Boot projects</span>
+<span class="cc">---</span>
+
+<span class="cc">## Whenever creating backend code:</span>
+
+<span class="cn">1.</span> <span class="cf">mvn compile</span>  -> Fix if fails
+<span class="cn">2.</span> <span class="cf">mvn test</span>     -> Fix failing tests
+<span class="cn">3.</span> Check logs for errors
+<span class="cn">4.</span> Review quality -> Score 1-10
+     -> Improve if below 9
+<span class="cn">5.</span> Repeat (max <span class="cn">5</span> times)</pre>
+                        </div>
+                    </div>
+                </div>
+                <div id="detail-method4" class="hidden">
+                    <h3 style="font-size:1.25rem;font-weight:700;color:white;margin-bottom:24px;">&#127907; Method 4
+                        &mdash; Hooks (Automated Triggers)</h3>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:32px;">
+                        <div>
+                            <p style="color:#94a3b8;font-size:14px;margin-bottom:16px;">Hooks run commands automatically
+                                at specific points in the agent lifecycle.</p>
+                            <div
+                                style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);border-radius:12px;padding:16px;margin-bottom:12px;">
+                                <div style="color:#fbbf24;font-weight:700;font-size:12px;margin-bottom:8px;">Hook Points
+                                </div>
+                                <div style="display:flex;flex-direction:column;gap:4px;font-size:14px;color:#94a3b8;">
+                                    <div><strong style="color:white;">PreToolUse</strong> &mdash; before file edits
+                                    </div>
+                                    <div><strong style="color:white;">PostToolUse</strong> &mdash; after file edits
+                                    </div>
+                                    <div><strong style="color:white;">Stop</strong> &mdash; when Claude finishes</div>
+                                </div>
+                            </div>
+                            <div
+                                style="background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.2);border-radius:12px;padding:12px;">
+                                <div style="color:#cbd5e1;font-size:14px;">Auto-format, auto-lint, auto-test &mdash;
+                                    loop automation without prompting</div>
+                            </div>
+                        </div>
+                        <div class="code-block">
+                            <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
+                                <div style="width:12px;height:12px;border-radius:50%;background:#ef4444;"></div>
+                                <div style="width:12px;height:12px;border-radius:50%;background:#f59e0b;"></div>
+                                <div style="width:12px;height:12px;border-radius:50%;background:#22c55e;"></div><span
+                                    style="color:#64748b;font-size:12px;margin-left:8px;">.claude/settings.json</span>
+                            </div>
+                            <pre>{
+  <span class="cs">"hooks"</span>: {
+    <span class="cs">"PostToolUse"</span>: [{
+      <span class="cs">"matcher"</span>: <span class="cs">"Write"</span>,
+      <span class="cs">"hooks"</span>: [{
+        <span class="cs">"type"</span>: <span class="cs">"command"</span>,
+        <span class="cs">"command"</span>: <span class="cs">"npm test"</span>
+      }]
+    }]
+  }
+}
+<span class="cc">// Flow:</span>
+<span class="cc">// Claude edits file</span>
+<span class="cc">// -> npm test runs automatically</span>
+<span class="cc">// -> Claude reads result</span>
+<span class="cc">// -> Fixes if failed  (LOOP!)</span></pre>
+                        </div>
+                    </div>
+                </div>
+                <div id="detail-method5" class="hidden">
+                    <h3 style="font-size:1.25rem;font-weight:700;color:white;margin-bottom:24px;">&#128101; Method 5
+                        &mdash; Sub-Agents (Maker vs Checker)</h3>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:32px;">
+                        <div>
+                            <p style="color:#94a3b8;font-size:14px;margin-bottom:16px;">Multiple Claude instances with
+                                distinct roles create a quality pipeline.</p>
+                            <div style="display:flex;flex-direction:column;gap:4px;">
+                                <div
+                                    style="background:rgba(41,82,243,0.1);border:1px solid rgba(41,82,243,0.2);border-radius:12px;padding:12px;display:flex;align-items:center;gap:12px;">
+                                    <span style="font-size:24px;">&#129302;</span>
+                                    <div>
+                                        <div style="color:white;font-weight:700;font-size:14px;">Claude A &mdash; Writer
+                                        </div>
+                                        <div style="color:#94a3b8;font-size:12px;">Implements the feature</div>
+                                    </div>
+                                </div>
+                                <div class="sc">
+                                    <div class="scl"></div>
+                                </div>
+                                <div
+                                    style="background:rgba(124,58,237,0.1);border:1px solid rgba(124,58,237,0.2);border-radius:12px;padding:12px;display:flex;align-items:center;gap:12px;">
+                                    <span style="font-size:24px;">&#128269;</span>
+                                    <div>
+                                        <div style="color:white;font-weight:700;font-size:14px;">Claude B &mdash;
+                                            Reviewer</div>
+                                        <div style="color:#94a3b8;font-size:12px;">Code review &amp; quality check</div>
+                                    </div>
+                                </div>
+                                <div class="sc">
+                                    <div class="scl"></div>
+                                </div>
+                                <div
+                                    style="background:rgba(244,63,94,0.1);border:1px solid rgba(244,63,94,0.2);border-radius:12px;padding:12px;display:flex;align-items:center;gap:12px;">
+                                    <span style="font-size:24px;">&#128274;</span>
+                                    <div>
+                                        <div style="color:white;font-weight:700;font-size:14px;">Claude C &mdash;
+                                            Security</div>
+                                        <div style="color:#94a3b8;font-size:12px;">Vulnerability scan</div>
+                                    </div>
+                                </div>
+                                <div class="sc">
+                                    <div class="scl"></div>
+                                </div>
+                                <div
+                                    style="background:rgba(52,211,153,0.1);border:1px solid rgba(52,211,153,0.2);border-radius:12px;padding:12px;display:flex;align-items:center;gap:12px;">
+                                    <span style="font-size:24px;">&#9989;</span>
+                                    <div>
+                                        <div style="color:white;font-weight:700;font-size:14px;">Claude A &mdash; Fixer
+                                        </div>
+                                        <div style="color:#94a3b8;font-size:12px;">Applies feedback, loops if needed
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <div
+                                style="background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.2);border-radius:12px;padding:20px;margin-bottom:16px;">
+                                <div style="color:#34d399;font-weight:700;margin-bottom:8px;">Why Maker vs Checker?
+                                </div>
+                                <div style="color:#cbd5e1;font-size:14px;">A separate Checker Claude reviews with fresh
+                                    perspective &mdash; just like human code review catches blind spots.</div>
+                            </div>
+                            <div
+                                style="background:rgba(41,82,243,0.08);border:1px solid rgba(41,82,243,0.2);border-radius:12px;padding:20px;">
+                                <div style="color:#527bff;font-weight:700;margin-bottom:8px;">Best For</div>
+                                <div style="display:flex;flex-direction:column;gap:4px;color:#cbd5e1;font-size:14px;">
+                                    <div>&#8226; Critical production features</div>
+                                    <div>&#8226; Security-sensitive code</div>
+                                    <div>&#8226; Complex refactoring tasks</div>
+                                    <div>&#8226; API contract changes</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION 6: PRODUCTION -->
+    <section id="production" style="padding:96px 24px;background:rgba(8,11,16,0.8);">
+        <div style="max-width:1200px;margin:0 auto;">
+            <div class="se" style="text-align:center;margin-bottom:64px;">
+                <span class="badge"
+                    style="background:rgba(52,211,153,0.1);color:#34d399;border:1px solid rgba(52,211,153,0.3);margin-bottom:16px;display:inline-flex;">&#127981;
+                    Production</span>
+                <h2 style="font-size:clamp(2rem,4vw,2.5rem);font-weight:900;color:white;margin-bottom:16px;">GPS
+                    Tracking Module &mdash; Production Loop</h2>
+                <p style="color:#94a3b8;max-width:480px;margin:0 auto;">A complete real-world loop prompt for your
+                    Employee Monitoring System.</p>
+            </div>
+            <div class="se" style="display:grid;grid-template-columns:1fr 2fr;gap:32px;">
+                <div>
+                    <div class="glass" style="border-radius:20px;padding:24px;margin-bottom:24px;">
+                        <h3
+                            style="color:white;font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:16px;">
+                            HLD &mdash; Production Loop Flow</h3>
+                        <div style="display:flex;flex-direction:column;gap:4px;">
+                            <div
+                                style="background:rgba(41,82,243,0.15);border:1px solid rgba(41,82,243,0.3);border-radius:8px;padding:8px;text-align:center;font-size:12px;font-weight:600;color:#86a8ff;">
+                                &#127919; GOAL: GPS Module</div>
+                            <div style="display:flex;justify-content:center;padding:4px 0;"><svg width="16" height="16"
+                                    fill="#527bff" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd"
+                                        d="M16.707 10.293a1 1 0 010 1.414l-6 6a1 1 0 01-1.414 0l-6-6a1 1 0 111.414-1.414L9 14.586V3a1 1 0 012 0v11.586l4.293-4.293a1 1 0 011.414 0z"
+                                        clip-rule="evenodd" />
+                                </svg></div>
+                            <div
+                                style="background:rgba(30,36,53,0.5);border-radius:8px;padding:8px;text-align:center;font-size:12px;color:#94a3b8;">
+                                &#128194; Analyze Codebase</div>
+                            <div style="display:flex;justify-content:center;padding:4px 0;"><svg width="16" height="16"
+                                    fill="#527bff" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd"
+                                        d="M16.707 10.293a1 1 0 010 1.414l-6 6a1 1 0 01-1.414 0l-6-6a1 1 0 111.414-1.414L9 14.586V3a1 1 0 012 0v11.586l4.293-4.293a1 1 0 011.414 0z"
+                                        clip-rule="evenodd" />
+                                </svg></div>
+                            <div
+                                style="background:rgba(30,36,53,0.5);border-radius:8px;padding:8px;text-align:center;font-size:12px;color:#94a3b8;">
+                                &#128203; Implementation Plan</div>
+                            <div style="display:flex;justify-content:center;padding:4px 0;"><svg width="16" height="16"
+                                    fill="#527bff" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd"
+                                        d="M16.707 10.293a1 1 0 010 1.414l-6 6a1 1 0 01-1.414 0l-6-6a1 1 0 111.414-1.414L9 14.586V3a1 1 0 012 0v11.586l4.293-4.293a1 1 0 011.414 0z"
+                                        clip-rule="evenodd" />
+                                </svg></div>
+                            <div
+                                style="background:rgba(30,36,53,0.5);border-radius:8px;padding:8px;text-align:center;font-size:12px;color:#94a3b8;">
+                                &#9749; Backend (Spring Boot)</div>
+                            <div style="display:flex;justify-content:center;padding:4px 0;"><svg width="16" height="16"
+                                    fill="#527bff" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd"
+                                        d="M16.707 10.293a1 1 0 010 1.414l-6 6a1 1 0 01-1.414 0l-6-6a1 1 0 111.414-1.414L9 14.586V3a1 1 0 012 0v11.586l4.293-4.293a1 1 0 011.414 0z"
+                                        clip-rule="evenodd" />
+                                </svg></div>
+                            <div
+                                style="background:rgba(30,36,53,0.5);border-radius:8px;padding:8px;text-align:center;font-size:12px;color:#94a3b8;">
+                                &#127344; Frontend (Angular)</div>
+                            <div style="display:flex;justify-content:center;padding:4px 0;"><svg width="16" height="16"
+                                    fill="#527bff" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd"
+                                        d="M16.707 10.293a1 1 0 010 1.414l-6 6a1 1 0 01-1.414 0l-6-6a1 1 0 111.414-1.414L9 14.586V3a1 1 0 012 0v11.586l4.293-4.293a1 1 0 011.414 0z"
+                                        clip-rule="evenodd" />
+                                </svg></div>
+                            <div
+                                style="background:rgba(30,36,53,0.5);border-radius:8px;padding:8px;text-align:center;font-size:12px;color:#94a3b8;">
+                                &#128024; DB Migration (Flyway)</div>
+                            <div style="display:flex;justify-content:center;padding:4px 0;"><svg width="16" height="16"
+                                    fill="#527bff" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd"
+                                        d="M16.707 10.293a1 1 0 010 1.414l-6 6a1 1 0 01-1.414 0l-6-6a1 1 0 111.414-1.414L9 14.586V3a1 1 0 012 0v11.586l4.293-4.293a1 1 0 011.414 0z"
+                                        clip-rule="evenodd" />
+                                </svg></div>
+                            <div
+                                style="background:rgba(41,82,243,0.2);border:1px solid rgba(41,82,243,0.4);border-radius:8px;padding:8px;text-align:center;font-size:12px;font-weight:600;color:white;">
+                                &#127939; Build + Test Run</div>
+                            <div style="display:flex;justify-content:center;padding:4px 0;"><svg width="16" height="16"
+                                    fill="#527bff" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd"
+                                        d="M16.707 10.293a1 1 0 010 1.414l-6 6a1 1 0 01-1.414 0l-6-6a1 1 0 111.414-1.414L9 14.586V3a1 1 0 012 0v11.586l4.293-4.293a1 1 0 011.414 0z"
+                                        clip-rule="evenodd" />
+                                </svg></div>
+                            <div
+                                style="background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.4);border-radius:8px;padding:8px;text-align:center;font-size:12px;font-weight:700;color:#fcd34d;">
+                                All Checks Pass?</div>
+                            <div style="display:flex;gap:8px;margin-top:8px;">
+                                <div
+                                    style="flex:1;background:rgba(244,63,94,0.1);border-radius:8px;padding:8px;text-align:center;font-size:11px;color:#fb7185;">
+                                    NO &rarr; Fix &amp; Retry</div>
+                                <div
+                                    style="flex:1;background:rgba(52,211,153,0.1);border-radius:8px;padding:8px;text-align:center;font-size:11px;color:#34d399;">
+                                    YES &rarr; &#9989; STOP</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="glass" style="border-radius:20px;padding:24px;">
+                        <h3
+                            style="color:white;font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:16px;">
+                            Your Tech Stack</h3>
+                        <div style="display:flex;flex-direction:column;gap:8px;">
+                            <div
+                                style="background:rgba(30,36,53,0.5);border-radius:8px;padding:10px;display:flex;align-items:center;gap:10px;">
+                                <span>&#9749;</span><span style="color:#cbd5e1;font-size:14px;">Java 21 + Spring Boot
+                                    3</span>
+                            </div>
+                            <div
+                                style="background:rgba(30,36,53,0.5);border-radius:8px;padding:10px;display:flex;align-items:center;gap:10px;">
+                                <span>&#127344;</span><span style="color:#cbd5e1;font-size:14px;">Angular 17+</span>
+                            </div>
+                            <div
+                                style="background:rgba(30,36,53,0.5);border-radius:8px;padding:10px;display:flex;align-items:center;gap:10px;">
+                                <span>&#128024;</span><span style="color:#cbd5e1;font-size:14px;">PostgreSQL +
+                                    Flyway</span>
+                            </div>
+                            <div
+                                style="background:rgba(30,36,53,0.5);border-radius:8px;padding:10px;display:flex;align-items:center;gap:10px;">
+                                <span>&#128290;</span><span style="color:#cbd5e1;font-size:14px;">VS Code + Claude Code
+                                    Pro</span>
+                            </div>
+                            <div
+                                style="background:rgba(30,36,53,0.5);border-radius:8px;padding:10px;display:flex;align-items:center;gap:10px;">
+                                <span>&#128737;&#65039;</span><span style="color:#cbd5e1;font-size:14px;">SonarQube
+                                    Analysis</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="code-block" style="position:relative;">
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:24px;">
+                        <div style="width:12px;height:12px;border-radius:50%;background:#ef4444;"></div>
+                        <div style="width:12px;height:12px;border-radius:50%;background:#f59e0b;"></div>
+                        <div style="width:12px;height:12px;border-radius:50%;background:#22c55e;"></div>
+                        <span style="color:#64748b;font-size:12px;margin-left:8px;">Production Loop Prompt &mdash; GPS
+                            Module</span>
+                        <button id="copy-btn" onclick="copyPrompt()"
+                            style="margin-left:auto;font-size:12px;padding:4px 12px;border-radius:8px;background:rgba(41,82,243,0.2);border:1px solid rgba(41,82,243,0.3);color:#86a8ff;cursor:pointer;transition:all 0.3s;">&#128203;
+                            Copy</button>
+                    </div>
+                    <pre id="prod-prompt"><span class="cc">// PRODUCTION LOOP PROMPT -- GPS TRACKING MODULE</span>
+
+<span class="cc">-- GOAL -----------------------------------------------</span>
+<span class="cs">Implement GPS Tracking Module for the
+Employee Monitoring System.</span>
+
+<span class="cc">-- CONTEXT --------------------------------------------</span>
+<span class="cs">You are a Senior Full Stack Engineer.</span>
+<span class="cv">Backend:</span>    Spring Boot 3.x (Java 21)
+<span class="cv">Frontend:</span>   Angular 17+
+<span class="cv">Database:</span>   PostgreSQL + Flyway migrations
+<span class="co">NEVER change existing API contracts</span>
+<span class="co">NEVER delete Flyway migration files</span>
+
+<span class="cc">-- EXECUTION PROTOCOL ---------------------------------</span>
+<span class="cn">1.</span> Analyze codebase (read ALL relevant files)
+<span class="cn">2.</span> Create detailed implementation plan
+<span class="cn">3.</span> Implement backend (Spring Boot)
+<span class="cn">4.</span> Implement frontend (Angular)
+<span class="cn">5.</span> Write Flyway SQL migration scripts
+<span class="cn">6.</span> Update API docs (OpenAPI/Swagger)
+<span class="cn">7.</span> Run full build and test suite
+
+<span class="cc">-- VERIFICATION CHECKLIST -----------------------------</span>
+<span class="cg">mvn clean install  =>  BUILD SUCCESS</span>
+<span class="cg">ng build           =>  Angular OK</span>
+<span class="cg">All unit tests pass</span>
+<span class="cg">Flyway migration runs without error</span>
+<span class="cg">No SonarQube critical issues</span>
+<span class="cg">No security vulnerabilities (OWASP)</span>
+<span class="cg">No duplicate code blocks</span>
+<span class="cg">Self-review score is 9/10 or above</span>
+
+<span class="cc">-- LOOP RULE ------------------------------------------</span>
+<span class="ck">IF</span> any check fails:
+  Identify root cause
+  Fix the issue
+  <span class="ck">REPEAT</span> from verification step
+
+<span class="cc">-- EXIT CONDITION -------------------------------------</span>
+<span class="ck">STOP</span> <span class="cs">when EVERYTHING passes</span>
+<span class="cv">OR</span> maximum <span class="cn">5 iterations</span> reached.
+<span class="cf">Summarize</span> all changes made.</pre>
+                </div>
+            </div>
+
+            <!-- Stack Table -->
+            <div class="glass se" style="border-radius:20px;padding:32px;margin-top:48px;">
+                <h3 style="font-size:1.2rem;font-weight:700;color:white;margin-bottom:24px;text-align:center;">&#11088;
+                    Your Recommended Stack</h3>
+                <div style="overflow-x:auto;">
+                    <table style="width:100%;font-size:14px;border-collapse:collapse;">
+                        <thead>
+                            <tr style="border-bottom:1px solid rgba(41,82,243,0.2);">
+                                <th style="text-align:left;padding:12px 16px;color:#94a3b8;font-weight:600;">Component
+                                </th>
+                                <th style="text-align:left;padding:12px 16px;color:#94a3b8;font-weight:600;">What to Use
+                                </th>
+                                <th style="text-align:left;padding:12px 16px;color:#94a3b8;font-weight:600;">Purpose
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr style="border-bottom:1px solid rgba(30,36,53,0.5);">
+                                <td style="padding:12px 16px;"><span
+                                        style="font-size:18px;margin-right:8px;">&#128218;</span><span
+                                        style="color:white;font-weight:500;">Project Memory</span></td>
+                                <td style="padding:12px 16px;"><code
+                                        style="color:#86a8ff;background:rgba(41,82,243,0.15);padding:2px 8px;border-radius:4px;">CLAUDE.md</code>
+                                </td>
+                                <td style="padding:12px 16px;color:#94a3b8;">Persistent context every session</td>
+                            </tr>
+                            <tr style="border-bottom:1px solid rgba(30,36,53,0.5);">
+                                <td style="padding:12px 16px;"><span
+                                        style="font-size:18px;margin-right:8px;">&#129513;</span><span
+                                        style="color:white;font-weight:500;">Reusable Behavior</span></td>
+                                <td style="padding:12px 16px;"><code
+                                        style="color:#a78bfa;background:rgba(124,58,237,0.15);padding:2px 8px;border-radius:4px;">Skills (.md files)</code>
+                                </td>
+                                <td style="padding:12px 16px;color:#94a3b8;">Stack-specific loop templates</td>
+                            </tr>
+                            <tr style="border-bottom:1px solid rgba(30,36,53,0.5);">
+                                <td style="padding:12px 16px;"><span
+                                        style="font-size:18px;margin-right:8px;">&#8635;</span><span
+                                        style="color:white;font-weight:500;">Self-Improvement</span></td>
+                                <td style="padding:12px 16px;"><code
+                                        style="color:#34d399;background:rgba(16,185,129,0.15);padding:2px 8px;border-radius:4px;">Loop + Verification</code>
+                                </td>
+                                <td style="padding:12px 16px;color:#94a3b8;">Critic loop with quality scoring</td>
+                            </tr>
+                            <tr style="border-bottom:1px solid rgba(30,36,53,0.5);">
+                                <td style="padding:12px 16px;"><span
+                                        style="font-size:18px;margin-right:8px;">&#9881;&#65039;</span><span
+                                        style="color:white;font-weight:500;">Automation</span></td>
+                                <td style="padding:12px 16px;"><code
+                                        style="color:#fbbf24;background:rgba(245,158,11,0.15);padding:2px 8px;border-radius:4px;">Hooks</code>
+                                </td>
+                                <td style="padding:12px 16px;color:#94a3b8;">Auto-format, lint, test triggers</td>
+                            </tr>
+                            <tr style="border-bottom:1px solid rgba(30,36,53,0.5);">
+                                <td style="padding:12px 16px;"><span
+                                        style="font-size:18px;margin-right:8px;">&#128101;</span><span
+                                        style="color:white;font-weight:500;">Quality</span></td>
+                                <td style="padding:12px 16px;"><code
+                                        style="color:#fb7185;background:rgba(244,63,94,0.15);padding:2px 8px;border-radius:4px;">Sub-Agents</code>
+                                </td>
+                                <td style="padding:12px 16px;color:#94a3b8;">Writer + Reviewer separation</td>
+                            </tr>
+                            <tr>
+                                <td style="padding:12px 16px;"><span
+                                        style="font-size:18px;margin-right:8px;">&#128721;</span><span
+                                        style="color:white;font-weight:500;">Safety</span></td>
+                                <td style="padding:12px 16px;"><code
+                                        style="color:#e2e8f0;background:rgba(71,85,105,0.3);padding:2px 8px;border-radius:4px;">Exit Condition</code>
+                                </td>
+                                <td style="padding:12px 16px;color:#94a3b8;">Tests pass OR max 5 iterations</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer style="padding:48px 24px;text-align:center;border-top:1px solid rgba(30,36,53,0.8);">
+        <div style="max-width:800px;margin:0 auto;">
+            <div class="gradient-brand af"
+                style="width:48px;height:48px;border-radius:16px;display:flex;align-items:center;justify-content:center;color:white;font-weight:900;font-size:24px;margin:0 auto 16px;">
+                &#8635;</div>
+            <h3 class="gradient-text" style="font-size:1.5rem;font-weight:900;margin-bottom:8px;">Loop Engineering</h3>
+            <p style="color:#64748b;font-size:14px;margin-bottom:24px;">Design goals. Let Claude execute. Verify
+                automatically. Iterate until perfect.</p>
+            <div>
+                <span class="fp">CLAUDE.md</span><span class="fp">Skills</span><span class="fp">Hooks</span>
+                <span class="fp">Sub-Agents</span><span class="fp">Exit Conditions</span><span
+                    class="fp">Self-Critic</span>
+                <span class="fp">Natural Language</span>
+            </div>
+            <p style="color:#334155;font-size:12px;margin-top:32px;">Made for Employee Monitoring System &mdash; Angular
+                + Spring Boot + PostgreSQL</p>
+        </div>
+    </footer>
+
+    <script>
+        function switchTab(btn, tab) {
+            document.querySelectorAll('.tab-btn').forEach(b => { b.classList.remove('active'); });
+            btn.classList.add('active');
+            document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
+            document.getElementById('panel-' + tab).classList.remove('hidden');
+        }
+        function selectMethod(card, method) {
+            document.querySelectorAll('.method-card').forEach(c => c.classList.remove('selected'));
+            card.classList.add('selected');
+            document.querySelectorAll('[id^="detail-"]').forEach(d => d.classList.add('hidden'));
+            document.getElementById('detail-' + method).classList.remove('hidden');
+        }
+        function copyPrompt() {
+            const el = document.getElementById('prod-prompt');
+            const text = el.innerText || el.textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = document.getElementById('copy-btn');
+                btn.innerHTML = '&#10003; Copied!';
+                btn.style.background = 'rgba(52,211,153,0.2)';
+                btn.style.borderColor = 'rgba(52,211,153,0.4)';
+                btn.style.color = '#34d399';
+                setTimeout(() => {
+                    btn.innerHTML = '&#128203; Copy';
+                    btn.style.background = 'rgba(41,82,243,0.2)';
+                    btn.style.borderColor = 'rgba(41,82,243,0.3)';
+                    btn.style.color = '#86a8ff';
+                }, 2500);
+            });
+        }
+        const observer = new IntersectionObserver(entries => {
+            entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+        }, { threshold: 0.1 });
+        document.querySelectorAll('.se').forEach(el => observer.observe(el));
+
+        const heroNodes = document.querySelectorAll('.node-box');
+        let ci = 0;
+        setInterval(() => {
+            heroNodes.forEach(n => n.classList.remove('active'));
+            if (heroNodes[ci]) heroNodes[ci].classList.add('active');
+            ci = (ci + 1) % heroNodes.length;
+        }, 1200);
+
+        document.querySelectorAll('a[href^="#"]').forEach(a => {
+            a.addEventListener('click', e => {
+                e.preventDefault();
+                const t = document.querySelector(a.getAttribute('href'));
+                if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+        });
+    </script>
+</body>
+
+</html>
