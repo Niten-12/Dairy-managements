@@ -11,20 +11,14 @@ import com.dairy.management.exception.ApiException;
 import com.dairy.management.repository.CategoryRepository;
 import com.dairy.management.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
+import java.math.BigDecimal;
 import java.util.List;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -33,11 +27,12 @@ public class ProductService {
     private static final Sort PUBLIC_SORT =
             Sort.by("sortOrder").ascending().and(Sort.by("id").ascending());
 
-    @Value("${app.upload-dir:uploads}")
-    private String uploadDir;
+    private static final String PRODUCT_IMAGE_DIR  = "products";
+    private static final String CATEGORY_IMAGE_DIR = "categories";
 
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
+    private final FileStorageService fileStorage;
 
     /* ── Public: Categories ─────────────────────────── */
 
@@ -81,14 +76,12 @@ public class ProductService {
 
     @Transactional
     public void deleteCategory(Long id) {
-        if (!categoryRepository.existsById(id)) {
-            throw new ApiException("Category not found", HttpStatus.NOT_FOUND);
-        }
-        // unlink products from this category before deleting
-        productRepository.findAll().stream()
-                .filter(p -> p.getCategory() != null && p.getCategory().getId().equals(id))
-                .forEach(p -> { p.setCategory(null); productRepository.save(p); });
-        categoryRepository.deleteById(id);
+        Category category = categoryRepository.findById(id)
+                .orElseThrow(() -> new ApiException("Category not found", HttpStatus.NOT_FOUND));
+        // Products are preserved: the FK is ON DELETE SET NULL (see V3), so the
+        // database uncategorises them automatically. No app-side unlink loop.
+        fileStorage.deleteManaged(category.getImageUrl(), CATEGORY_IMAGE_DIR);
+        categoryRepository.delete(category);
     }
 
     /* ── Public: Products ───────────────────────────── */
@@ -140,61 +133,106 @@ public class ProductService {
 
     @Transactional
     public ProductResponse createProduct(AdminProductRequest req) {
+        String name = normalizedName(req);
+        validatePricing(req);
+        requireUniqueName(name, null);
         Category category = resolveCategory(req.getCategoryId());
 
-        Product product = Product.builder()
-                .name(req.getName().trim())
-                .description(req.getDescription())
-                .price(req.getPrice())
-                .unit(req.getUnit().trim())
-                .emoji(req.getEmoji())
-                .tag(req.getTag())
-                .tagType(req.getTagType())
-                .bgGradient(req.getBgGradient())
-                .available(req.getAvailable() != null ? req.getAvailable() : true)
-                .stock(req.getStock() != null ? req.getStock() : 100)
-                .featured(req.getFeatured() != null ? req.getFeatured() : false)
-                .sortOrder(req.getSortOrder() != null ? req.getSortOrder() : 0)
-                .originalPrice(req.getOriginalPrice())
-                .category(category)
-                .build();
-
+        Product product = new Product();
+        applyRequest(product, req, name, category);
         return toProductResponse(productRepository.save(product));
     }
 
     /* ── Admin: Update ──────────────────────────────── */
 
+    /**
+     * Full-replacement update (PUT semantics): every field on the resource is
+     * set from the request, symmetric with create. Null optional booleans/ints
+     * fall back to the same defaults as create, so the contract is
+     * "send the complete product". Only the product with {@code id} is touched;
+     * a missing id is a 404 and never creates or mutates another row.
+     */
     @Transactional
     public ProductResponse updateProduct(Long id, AdminProductRequest req) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new ApiException("Product not found", HttpStatus.NOT_FOUND));
 
-        product.setCategory(resolveCategory(req.getCategoryId()));
-        product.setName(req.getName().trim());
-        product.setDescription(req.getDescription());
-        product.setPrice(req.getPrice());
-        product.setUnit(req.getUnit().trim());
-        product.setEmoji(req.getEmoji());
-        product.setTag(req.getTag());
-        product.setTagType(req.getTagType());
-        product.setBgGradient(req.getBgGradient());
-        if (req.getAvailable()  != null) product.setAvailable(req.getAvailable());
-        if (req.getStock()      != null) product.setStock(req.getStock());
-        if (req.getFeatured()   != null) product.setFeatured(req.getFeatured());
-        if (req.getSortOrder()  != null) product.setSortOrder(req.getSortOrder());
-        product.setOriginalPrice(req.getOriginalPrice());
+        String name = normalizedName(req);
+        validatePricing(req);
+        requireUniqueName(name, id);
+        Category category = resolveCategory(req.getCategoryId());
 
+        applyRequest(product, req, name, category);
         return toProductResponse(productRepository.save(product));
+    }
+
+    /* ── Product write helpers ──────────────────────── */
+
+    /** Copy a validated request onto an entity. Used by both create and update. */
+    private void applyRequest(Product p, AdminProductRequest req, String name, Category category) {
+        p.setName(name);
+        p.setDescription(normalizeBlank(req.getDescription()));
+        p.setPrice(req.getPrice());
+        p.setOriginalPrice(req.getOriginalPrice());
+        p.setUnit(req.getUnit().trim());
+        p.setEmoji(normalizeBlank(req.getEmoji()));
+        p.setTag(normalizeBlank(req.getTag()));
+        p.setTagType(normalizeBlank(req.getTagType()));
+        p.setBgGradient(normalizeBlank(req.getBgGradient()));
+        p.setAvailable(req.getAvailable() != null ? req.getAvailable() : true);
+        p.setStock(req.getStock() != null ? req.getStock() : 100);
+        p.setFeatured(req.getFeatured() != null ? req.getFeatured() : false);
+        p.setSortOrder(req.getSortOrder() != null ? req.getSortOrder() : 0);
+        p.setCategory(category);
+    }
+
+    private String normalizedName(AdminProductRequest req) {
+        // @NotBlank already rejected null/blank; trim so " Milk " and "Milk" collide.
+        return req.getName().trim();
+    }
+
+    /** Backstop for cross-field money rules the DTO annotations cannot express. */
+    private void validatePricing(AdminProductRequest req) {
+        BigDecimal price = req.getPrice();
+        if (price == null || price.signum() <= 0) {
+            throw new ApiException("Price must be greater than zero", HttpStatus.BAD_REQUEST);
+        }
+        BigDecimal original = req.getOriginalPrice();
+        if (original != null) {
+            if (original.signum() <= 0) {
+                throw new ApiException("Original price must be greater than zero", HttpStatus.BAD_REQUEST);
+            }
+            if (original.compareTo(price) < 0) {
+                throw new ApiException("Original price cannot be lower than the price", HttpStatus.BAD_REQUEST);
+            }
+        }
+    }
+
+    /** Case-insensitive name uniqueness. excludeId lets a product keep its own name on update. */
+    private void requireUniqueName(String name, Long excludeId) {
+        productRepository.findByNameIgnoreCase(name)
+                .filter(existing -> !existing.getId().equals(excludeId))
+                .ifPresent(existing -> {
+                    throw new ApiException("A product with this name already exists", HttpStatus.CONFLICT);
+                });
+    }
+
+    private static String normalizeBlank(String value) {
+        if (value == null) return null;
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 
     /* ── Admin: Delete ──────────────────────────────── */
 
     @Transactional
     public void deleteProduct(Long id) {
-        if (!productRepository.existsById(id)) {
-            throw new ApiException("Product not found", HttpStatus.NOT_FOUND);
-        }
-        productRepository.deleteById(id);
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new ApiException("Product not found", HttpStatus.NOT_FOUND));
+        String imageUrl = product.getImageUrl();
+        productRepository.delete(product);
+        // Remove the managed image only after the row is gone.
+        fileStorage.deleteManaged(imageUrl, PRODUCT_IMAGE_DIR);
     }
 
     /* ── Admin: Toggle Available ────────────────────── */
@@ -209,34 +247,39 @@ public class ProductService {
 
     /* ── Admin: Image Upload ────────────────────────────── */
 
+    /**
+     * Safe image replacement. Ordering guarantees a failed upload never destroys
+     * the current working image:
+     *   1. validate + store the NEW file (throws → old image untouched)
+     *   2. point the entity at the new URL and flush the DB write
+     *   3. if the flush fails, delete the freshly stored orphan and rethrow
+     *   4. only after the DB write succeeds, delete the OLD file
+     *
+     * Trade-off: filesystem and PostgreSQL are not one transaction. We flush
+     * (not just save) so DB errors surface inside step 3; the only residual gap
+     * is a commit-time failure after a successful flush, which is rare and, at
+     * worst, orphans a file — never corrupts the product row. Two-phase commit
+     * is deliberately avoided.
+     */
     @Transactional
     public ProductResponse uploadProductImage(Long id, MultipartFile file) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new ApiException("Product not found", HttpStatus.NOT_FOUND));
 
-        String original  = file.getOriginalFilename();
-        String ext       = (original != null && original.contains("."))
-                ? original.substring(original.lastIndexOf('.')) : ".jpg";
-        String filename  = "product_" + id + "_" + UUID.randomUUID().toString().substring(0, 8) + ext;
+        String oldUrl = product.getImageUrl();
+        String newUrl = fileStorage.store(file, PRODUCT_IMAGE_DIR, "product_" + id);
 
-        Path dir  = Paths.get(uploadDir, "products");
-        Path dest = dir.resolve(filename);
-
+        product.setImageUrl(newUrl);
+        Product saved;
         try {
-            Files.createDirectories(dir);
-            Files.copy(file.getInputStream(), dest, StandardCopyOption.REPLACE_EXISTING);
-        } catch (IOException e) {
-            throw new ApiException("Failed to save image: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+            saved = productRepository.saveAndFlush(product);
+        } catch (RuntimeException e) {
+            fileStorage.deleteManaged(newUrl, PRODUCT_IMAGE_DIR); // clean up the orphan
+            throw e;
         }
 
-        if (product.getImageUrl() != null) {
-            try { Files.deleteIfExists(Paths.get(uploadDir, "products",
-                    Paths.get(product.getImageUrl()).getFileName().toString())); }
-            catch (IOException ignored) {}
-        }
-
-        product.setImageUrl("/uploads/products/" + filename);
-        return toProductResponse(productRepository.save(product));
+        fileStorage.deleteManaged(oldUrl, PRODUCT_IMAGE_DIR);
+        return toProductResponse(saved);
     }
 
     /* ── Admin: Stats ───────────────────────────────────── */
@@ -342,32 +385,22 @@ public class ProductService {
 
     @Transactional
     public CategoryResponse uploadCategoryImage(Long id, MultipartFile file) {
-        if (id == null) throw new ApiException("Category ID required", HttpStatus.BAD_REQUEST);
         Category category = categoryRepository.findById(id)
                 .orElseThrow(() -> new ApiException("Category not found", HttpStatus.NOT_FOUND));
 
-        String original = file.getOriginalFilename();
-        String ext      = (original != null && original.contains("."))
-                ? original.substring(original.lastIndexOf('.')) : ".jpg";
-        String filename = "category_" + id + "_" + UUID.randomUUID().toString().substring(0, 8) + ext;
+        String oldUrl = category.getImageUrl();
+        String newUrl = fileStorage.store(file, CATEGORY_IMAGE_DIR, "category_" + id);
 
-        Path dir  = Paths.get(uploadDir, "categories");
-        Path dest = dir.resolve(filename);
-
+        category.setImageUrl(newUrl);
+        Category saved;
         try {
-            Files.createDirectories(dir);
-            Files.copy(file.getInputStream(), dest, StandardCopyOption.REPLACE_EXISTING);
-        } catch (IOException e) {
-            throw new ApiException("Failed to save image: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+            saved = categoryRepository.saveAndFlush(category);
+        } catch (RuntimeException e) {
+            fileStorage.deleteManaged(newUrl, CATEGORY_IMAGE_DIR);
+            throw e;
         }
 
-        if (category.getImageUrl() != null) {
-            try { Files.deleteIfExists(Paths.get(uploadDir, "categories",
-                    Paths.get(category.getImageUrl()).getFileName().toString())); }
-            catch (IOException ignored) {}
-        }
-
-        category.setImageUrl("/uploads/categories/" + filename);
-        return toCategoryResponse(categoryRepository.save(category));
+        fileStorage.deleteManaged(oldUrl, CATEGORY_IMAGE_DIR);
+        return toCategoryResponse(saved);
     }
 }

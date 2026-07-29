@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
-import axios from 'axios'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { useCart } from '../../context/CartContext'
 import { useAuth } from '../../context/AuthContext'
 import { useAuthModal } from '../../context/AuthModalContext'
+import { getPublicProducts } from '../../api/publicProductApi'
+import { formatPrice } from '../../utils/productDisplay'
 
 const NAV_LINKS = [
   { label: 'Products',     id: 'products',     icon: '🛒' },
@@ -38,6 +39,7 @@ function NavSearch() {
   const [query,       setQuery]       = useState('')
   const [results,     setResults]     = useState([])
   const [loading,     setLoading]     = useState(false)
+  const [searchError, setSearchError] = useState(false)
   const [allProducts, setAllProducts] = useState(null)
   const inputRef = useRef(null)
   const wrapRef  = useRef(null)
@@ -65,34 +67,39 @@ function NavSearch() {
     if (open) setTimeout(() => inputRef.current?.focus(), 60)
   }, [open])
 
-  const closeSearch = () => { setOpen(false); setQuery(''); setResults([]) }
+  const closeSearch = () => { setOpen(false); setQuery(''); setResults([]); setSearchError(false) }
 
-  /* Fetch all products once, cache */
+  /* Fetch all products once, cache. Returns null (not []) on failure so the
+     caller can distinguish "search unavailable" from "no matches". */
   const getProducts = useCallback(async () => {
     if (allProducts) return allProducts
-    setLoading(true)
+    setLoading(true); setSearchError(false)
     try {
-      const { data } = await axios.get('/api/products')
-      setAllProducts(data)
-      return data
-    } catch { return [] }
-    finally { setLoading(false) }
+      const { data } = await getPublicProducts()
+      const list = Array.isArray(data) ? data : []
+      setAllProducts(list)
+      return list
+    } catch {
+      setSearchError(true)
+      return null
+    } finally { setLoading(false) }
   }, [allProducts])
 
   /* Debounced search filter */
   useEffect(() => {
-    if (!query.trim()) { setResults([]); return }
+    if (!query.trim()) { setResults([]); setSearchError(false); return }
     const timer = setTimeout(async () => {
       const products = await getProducts()
+      if (products === null) { setResults([]); return } // failure — keep error flag, no false "empty"
       const q = query.toLowerCase()
       const filtered = products.filter(p =>
-        p.name.toLowerCase().includes(q) ||
+        (p.name || '').toLowerCase().includes(q) ||
         (p.description || '').toLowerCase().includes(q)
       ).slice(0, 7)
       setResults(filtered)
     }, 280)
     return () => clearTimeout(timer)
-  }, [query])
+  }, [query, getProducts])
 
   const handleSelect = (product) => {
     closeSearch()
@@ -159,7 +166,20 @@ function NavSearch() {
                 <div className="pub-search-status">Searching…</div>
               )}
 
-              {!loading && query.trim() && results.length === 0 && (
+              {!loading && searchError && (
+                <div className="pub-search-empty">
+                  <span style={{ fontSize: 32, display: 'block', marginBottom: 8 }}>⚠️</span>
+                  Search is unavailable right now.
+                  <button
+                    onClick={() => getProducts()}
+                    style={{ display: 'block', margin: '10px auto 0', padding: '5px 12px', borderRadius: 8, border: '1px solid #e2e8f0', background: '#fff', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}
+                  >
+                    ↻ Retry
+                  </button>
+                </div>
+              )}
+
+              {!loading && !searchError && query.trim() && results.length === 0 && (
                 <div className="pub-search-empty">
                   <span style={{ fontSize: 32, display: 'block', marginBottom: 8 }}>🔍</span>
                   No products found for <strong>"{query}"</strong>
@@ -182,7 +202,7 @@ function NavSearch() {
                         </div>
                         <div className="pub-search-result-unit">{p.unit}</div>
                       </div>
-                      <div className="pub-search-result-price">₹{parseFloat(p.price).toFixed(0)}</div>
+                      <div className="pub-search-result-price">{formatPrice(p.price)}</div>
                       <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#cbd5e1" strokeWidth="1.6" strokeLinecap="round">
                         <path d="M5 3l4 4-4 4" />
                       </svg>
@@ -235,6 +255,7 @@ function ProfileDropdown({ user, onClose, onLogout }) {
 /* ── Main Navbar ───────────────────────────────────────────── */
 function PublicNavbar() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { totalItems, openDrawer } = useCart()
   const { user, logout }           = useAuth()
   const { openLogin, openRegister } = useAuthModal()
@@ -277,7 +298,7 @@ function PublicNavbar() {
   return (
     <>
       {/* ── Navbar ─────────────────────────────────────────── */}
-      <nav className={`pub-navbar${scrolled ? ' pub-nav-scrolled' : ''}`}>
+      <nav className={`pub-navbar${scrolled ? ' pub-nav-scrolled' : ''}${location.pathname === '/' && !scrolled ? ' pub-nav-onhero' : ''}`}>
         <div className="pub-navbar-inner">
 
           {/* Logo */}

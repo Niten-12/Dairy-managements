@@ -1,17 +1,16 @@
 package com.dairy.management.service;
 
 import com.dairy.management.exception.ApiException;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
+import java.security.SecureRandom;
+import java.time.Clock;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Service
-@Slf4j
 public class OtpService {
 
     private record OtpEntry(String code, Instant expiresAt, int verifyAttempts) {}
@@ -19,24 +18,33 @@ public class OtpService {
 
     private final ConcurrentHashMap<String, OtpEntry> otpStore    = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, RateEntry> rateLimits = new ConcurrentHashMap<>();
-    private final Random random = new Random();
+    private final SecureRandom random = new SecureRandom();
+    private final Clock clock;
 
     private static final int OTP_EXPIRY_SECONDS  = 300; // 5 minutes
     private static final int MAX_SEND_PER_HOUR   = 5;
     private static final int MAX_VERIFY_ATTEMPTS = 3;
 
+    public OtpService() {
+        this(Clock.systemUTC());
+    }
+
+    /** Test seam: lets expiry/rate-window behavior be tested without sleeping. */
+    OtpService(Clock clock) {
+        this.clock = clock;
+    }
+
     /**
      * Generates a 6-digit OTP, stores it, enforces rate limit.
-     * Returns the code so the caller can forward it (via SMS or dev log).
+     * Returns the code so the caller can deliver it via SMS. The code must
+     * never be logged or exposed in API responses outside the explicit
+     * dev-only switch (see AuthService.sendOtp).
      */
     public String generateAndStore(String phone) {
         checkRateLimit(phone);
 
         String code = String.format("%06d", random.nextInt(1_000_000));
-        otpStore.put(phone, new OtpEntry(code, Instant.now().plusSeconds(OTP_EXPIRY_SECONDS), 0));
-
-        // DEV: log OTP to console — replace with real SMS provider in production
-        log.info("[OTP-DEV] Phone: {} → Code: {}", phone, code);
+        otpStore.put(phone, new OtpEntry(code, Instant.now(clock).plusSeconds(OTP_EXPIRY_SECONDS), 0));
         return code;
     }
 
@@ -50,7 +58,7 @@ public class OtpService {
         if (entry == null) {
             throw new ApiException("OTP not found or already used. Request a new one.", HttpStatus.UNAUTHORIZED);
         }
-        if (Instant.now().isAfter(entry.expiresAt())) {
+        if (Instant.now(clock).isAfter(entry.expiresAt())) {
             otpStore.remove(phone);
             throw new ApiException("OTP has expired. Please request a new one.", HttpStatus.UNAUTHORIZED);
         }
@@ -71,18 +79,18 @@ public class OtpService {
     public long getRemainingSeconds(String phone) {
         OtpEntry entry = otpStore.get(phone);
         if (entry == null) return 0;
-        long remaining = Instant.now().until(entry.expiresAt(), ChronoUnit.SECONDS);
+        long remaining = Instant.now(clock).until(entry.expiresAt(), ChronoUnit.SECONDS);
         return Math.max(0, remaining);
     }
 
     public boolean hasPendingOtp(String phone) {
         OtpEntry entry = otpStore.get(phone);
-        return entry != null && Instant.now().isBefore(entry.expiresAt());
+        return entry != null && Instant.now(clock).isBefore(entry.expiresAt());
     }
 
     private void checkRateLimit(String phone) {
         RateEntry re = rateLimits.get(phone);
-        Instant now  = Instant.now();
+        Instant now  = Instant.now(clock);
 
         if (re != null && now.isBefore(re.windowStart().plusSeconds(3600))) {
             if (re.count() >= MAX_SEND_PER_HOUR) {

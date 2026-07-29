@@ -12,6 +12,10 @@ frontend/.vite/
 backend/target/
 backend/*.jar
 
+# Runtime-uploaded images (never commit user uploads)
+backend/uploads/
+uploads/
+
 # IDE
 .idea/
 *.iml

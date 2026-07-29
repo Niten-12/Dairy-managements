@@ -1,8 +1,12 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import axios from 'axios'
 import { useCart } from '../../context/CartContext'
 import { HERO } from '../../config/heroConfig'
+import { getPublicProducts, getPublicCategories, getFeaturedProducts } from '../../api/publicProductApi'
+import { classifyError } from '../../utils/apiError'
+import { formatPrice, discountPercent, tagBadgeStyle } from '../../utils/productDisplay'
+import ProductErrorState from '../../components/public/ProductErrorState'
+import ProductImage from '../../components/public/ProductImage'
 
 
 /* ── Scroll-reveal hook ──────────────────────────────────────── */
@@ -51,6 +55,85 @@ const TESTIMONIALS = [
 
 const AD_STATS = HERO.stats
 
+/* ── Animated cow + buffalo illustration (mobile/tablet hero only) ── */
+function FarmAnimalsIllustration() {
+  return (
+    <div className="pub-hero-farm-illustration">
+      <svg viewBox="0 0 320 170" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Cow and buffalo illustration">
+        {/* Ground */}
+        <ellipse cx="160" cy="152" rx="150" ry="16" fill="#bbf7d0" />
+
+        {/* Floating clover accents */}
+        <text x="34" y="34" fontSize="16" className="pfa-float-a">🍀</text>
+        <text x="270" y="26" fontSize="14" className="pfa-float-b">☁️</text>
+        <text x="150" y="18" fontSize="13" className="pfa-float-c">☀️</text>
+
+        {/* ── Buffalo (back, right) ── */}
+        <g className="pfa-bob-b">
+          <ellipse cx="222" cy="112" rx="46" ry="30" fill="#334155" />
+          {/* legs */}
+          <rect x="192" y="130" width="9" height="22" rx="4" fill="#1e293b" />
+          <rect x="212" y="134" width="9" height="20" rx="4" fill="#1e293b" />
+          <rect x="234" y="134" width="9" height="20" rx="4" fill="#1e293b" />
+          <rect x="252" y="130" width="9" height="22" rx="4" fill="#1e293b" />
+          {/* tail */}
+          <path d="M266 100 Q280 112 274 130" stroke="#1e293b" strokeWidth="4" fill="none" strokeLinecap="round" className="pfa-tail" style={{ transformBox: 'fill-box', transformOrigin: '0% 0%' }} />
+          {/* head */}
+          <ellipse cx="192" cy="94" rx="24" ry="21" fill="#334155" />
+          {/* horns */}
+          <path d="M178 78 Q166 62 176 50" stroke="#78716c" strokeWidth="6" fill="none" strokeLinecap="round" />
+          <path d="M204 78 Q218 62 210 50" stroke="#78716c" strokeWidth="6" fill="none" strokeLinecap="round" />
+          {/* muzzle */}
+          <ellipse cx="180" cy="104" rx="11" ry="8" fill="#57534e" />
+          <circle cx="176" cy="103" r="1.6" fill="#1c1917" />
+          <circle cx="184" cy="103" r="1.6" fill="#1c1917" />
+          {/* eyes */}
+          <ellipse cx="188" cy="88" rx="2.6" ry="3.2" fill="#fff" className="pfa-blink-b" style={{ transformBox: 'fill-box', transformOrigin: '50% 50%' }} />
+          <ellipse cx="200" cy="88" rx="2.6" ry="3.2" fill="#fff" className="pfa-blink-b" style={{ transformBox: 'fill-box', transformOrigin: '50% 50%' }} />
+          {/* ears */}
+          <ellipse cx="176" cy="90" rx="5" ry="8" fill="#334155" transform="rotate(-20 176 90)" />
+          <ellipse cx="210" cy="90" rx="5" ry="8" fill="#334155" transform="rotate(20 210 90)" />
+        </g>
+
+        {/* ── Cow (front, left) ── */}
+        <g className="pfa-bob-a">
+          <ellipse cx="112" cy="120" rx="54" ry="34" fill="#fff" stroke="#e2e8f0" strokeWidth="1.5" />
+          {/* spots */}
+          <ellipse cx="94" cy="108" rx="13" ry="10" fill="#334155" />
+          <ellipse cx="134" cy="130" rx="11" ry="8" fill="#334155" />
+          <ellipse cx="128" cy="104" rx="7" ry="6" fill="#334155" />
+          {/* legs */}
+          <rect x="76" y="142" width="10" height="24" rx="5" fill="#1e293b" />
+          <rect x="98" y="146" width="10" height="22" rx="5" fill="#1e293b" />
+          <rect x="122" y="146" width="10" height="22" rx="5" fill="#1e293b" />
+          <rect x="144" y="142" width="10" height="24" rx="5" fill="#1e293b" />
+          {/* udder */}
+          <ellipse cx="112" cy="150" rx="14" ry="8" fill="#fecdd3" />
+          {/* tail */}
+          <path d="M162 106 Q178 118 172 140" stroke="#334155" strokeWidth="4" fill="none" strokeLinecap="round" className="pfa-tail" style={{ transformBox: 'fill-box', transformOrigin: '0% 0%' }} />
+          {/* head */}
+          <ellipse cx="68" cy="98" rx="26" ry="23" fill="#fff" stroke="#e2e8f0" strokeWidth="1.5" />
+          {/* horns */}
+          <path d="M54 78 Q48 66 56 58" stroke="#e7c9a9" strokeWidth="5" fill="none" strokeLinecap="round" />
+          <path d="M82 78 Q90 66 82 58" stroke="#e7c9a9" strokeWidth="5" fill="none" strokeLinecap="round" />
+          {/* ears */}
+          <ellipse cx="46" cy="94" rx="7" ry="10" fill="#fce7e3" transform="rotate(-24 46 94)" />
+          <ellipse cx="90" cy="94" rx="7" ry="10" fill="#fce7e3" transform="rotate(24 90 94)" />
+          {/* snout */}
+          <ellipse cx="52" cy="112" rx="15" ry="11" fill="#fecdd3" />
+          <ellipse cx="47" cy="112" rx="2" ry="2.6" fill="#be123c" />
+          <ellipse cx="58" cy="112" rx="2" ry="2.6" fill="#be123c" />
+          {/* spot on head */}
+          <ellipse cx="82" cy="90" rx="9" ry="8" fill="#334155" />
+          {/* eyes */}
+          <ellipse cx="58" cy="92" rx="2.8" ry="3.4" fill="#1e293b" className="pfa-blink-a" style={{ transformBox: 'fill-box', transformOrigin: '50% 50%' }} />
+          <ellipse cx="76" cy="92" rx="2.8" ry="3.4" fill="#1e293b" className="pfa-blink-a" style={{ transformBox: 'fill-box', transformOrigin: '50% 50%' }} />
+        </g>
+      </svg>
+    </div>
+  )
+}
+
 /* ── 1. Hero — 2-column layout ──────────────────────────────── */
 function HeroSection() {
   const navigate = useNavigate()
@@ -58,9 +141,13 @@ function HeroSection() {
   const [heroSearch,   setHeroSearch]   = useState('')
 
   useEffect(() => {
-    axios.get(`/api/products/categories`)
-      .then(r => setTickerCats(r.data))
-      .catch(() => {})
+    // Decorative category marquee only. If it fails we render nothing here
+    // (items stays []) — the real, retryable categories UI lives in
+    // CategoriesSection. Kept intentionally non-blocking, not silently
+    // swallowed elsewhere.
+    getPublicCategories()
+      .then(r => setTickerCats(Array.isArray(r.data) ? r.data : []))
+      .catch(() => setTickerCats([]))
   }, [])
 
   const handleHeroSearch = (e) => {
@@ -99,6 +186,15 @@ function HeroSection() {
 
         {/* LEFT — text content */}
         <div className="pub-hero-left">
+          {/* Mobile/tablet-only hand-lettered header (≤1024px) */}
+          <div className="pub-hero-m-accent pub-ha-badge">{HERO.mobileHero.accent}</div>
+          <h1 className="pub-hero-m-title pub-ha-title">
+            {HERO.mobileHero.headline.map((line, i) => (
+              <span key={i}>{i > 0 && <br />}{line}</span>
+            ))}
+          </h1>
+
+          {/* Desktop-only badge / headline / subtitle (>1024px) */}
           <div className="pub-hero-badge pub-ha-badge">
             <span className="pub-hero-badge-dot" />
             {HERO.badge.emoji} {HERO.badge.text}
@@ -116,6 +212,8 @@ function HeroSection() {
           </h1>
 
           <p className="pub-hero-subtitle pub-ha-sub">{HERO.subtitle}</p>
+
+          <FarmAnimalsIllustration />
 
           <div className="pub-hero-ctas pub-ha-ctas">
             <button
@@ -142,9 +240,10 @@ function HeroSection() {
           </div>
 
           {/* Hero Search */}
-          <form onSubmit={handleHeroSearch} style={{ display: 'flex', gap: 8, marginTop: 20, maxWidth: 440 }}>
+          <form onSubmit={handleHeroSearch} className="pub-hero-search-form" style={{ display: 'flex', gap: 8, marginTop: 20, maxWidth: 440 }}>
             <input
               type="text"
+              className="pub-hero-search-input"
               value={heroSearch}
               onChange={e => setHeroSearch(e.target.value)}
               placeholder="Search milk, paneer, ghee..."
@@ -217,16 +316,45 @@ function HeroSection() {
 function FeaturedSection() {
   const { addItem } = useCart()
   const [products, setProducts] = useState([])
+  const [status,   setStatus]   = useState('loading') // loading | success | error
+  const [error,    setError]    = useState(null)
   const [addedId,  setAddedId]  = useState(null)
   const [ref, visible] = useInView(0.05)
 
-  useEffect(() => {
-    axios.get('/api/products/featured')
-      .then(r => setProducts(r.data))
-      .catch(() => {})
+  const load = useCallback(async () => {
+    setStatus('loading'); setError(null)
+    try {
+      const { data } = await getFeaturedProducts()
+      setProducts(Array.isArray(data) ? data : [])
+      setStatus('success')
+    } catch (err) {
+      setError(classifyError(err))
+      setStatus('error')
+    }
   }, [])
 
-  if (products.length === 0) return null
+  useEffect(() => { load() }, [load])
+
+  // Failure must NOT look like "no featured products" — show a scoped,
+  // retryable error instead of collapsing the section.
+  if (status === 'error') {
+    return (
+      <section className="pub-section-sm" style={{ paddingTop: 32, paddingBottom: 0 }}>
+        <div className="pub-container">
+          <ProductErrorState
+            compact
+            message={error?.message}
+            retryable={error?.retryable}
+            onRetry={load}
+          />
+        </div>
+      </section>
+    )
+  }
+
+  // Genuinely no featured items (or still loading the first batch): render
+  // nothing — the full catalog below is the primary product surface.
+  if (status === 'loading' || products.length === 0) return null
 
   const handleAdd = (p) => {
     addItem({ id: p.id, name: p.name, price: p.price, emoji: p.emoji, unit: p.unit })
@@ -284,24 +412,26 @@ function FeaturedSection() {
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   fontSize: 52, position: 'relative', overflow: 'hidden',
                 }}>
-                  {p.imageUrl
-                    ? <img src={p.imageUrl} alt={p.name} style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', inset: 0 }} />
-                    : p.emoji || '📦'
-                  }
+                  <ProductImage
+                    src={p.imageUrl}
+                    alt={p.name}
+                    fallback={p.emoji || '📦'}
+                    imgStyle={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', inset: 0 }}
+                  />
                   <span style={{
                     position: 'absolute', top: 8, left: 8,
                     background: 'linear-gradient(90deg,#d97706,#f59e0b)',
                     color: '#fff', fontSize: 9, fontWeight: 800,
                     padding: '3px 8px', borderRadius: 999, letterSpacing: '0.05em',
                   }}>⭐ FEATURED</span>
-                  {p.originalPrice && (
+                  {discountPercent(p.price, p.originalPrice) !== null && (
                     <span style={{
                       position: 'absolute', top: 8, right: 8,
                       background: '#ef4444', color: '#fff',
                       fontSize: 9, fontWeight: 800,
                       padding: '3px 7px', borderRadius: 999,
                     }}>
-                      -{Math.round((1 - p.price / p.originalPrice) * 100)}%
+                      -{discountPercent(p.price, p.originalPrice)}%
                     </span>
                   )}
                 </div>
@@ -312,13 +442,13 @@ function FeaturedSection() {
                   <div style={{ fontSize: 11, color: '#64748b', marginBottom: 8 }}>{p.unit}</div>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div>
-                      {p.originalPrice && (
+                      {discountPercent(p.price, p.originalPrice) !== null && (
                         <div style={{ fontSize: 10, color: '#94a3b8', textDecoration: 'line-through', lineHeight: 1 }}>
-                          ₹{parseFloat(p.originalPrice).toFixed(0)}
+                          {formatPrice(p.originalPrice)}
                         </div>
                       )}
                       <span style={{ fontSize: 15, fontWeight: 800, color: '#16a34a' }}>
-                        ₹{parseFloat(p.price).toFixed(0)}
+                        {formatPrice(p.price)}
                       </span>
                     </div>
                     <button
@@ -354,22 +484,37 @@ function CategoriesSection() {
   const [products,   setProducts]   = useState([])
   const [activeCat,  setActiveCat]  = useState(null)
   const [loading,    setLoading]    = useState(true)
+  const [prodError,  setProdError]  = useState(null) // classified error or null
   const [addedId,    setAddedId]    = useState(null)
 
-  useEffect(() => {
-    axios.get(`/api/products/categories`)
-      .then(r => setCategories(r.data))
-      .catch(() => {})
+  // Categories drive the filter pills only. Their failure must never blank the
+  // product grid, so this load is independent and degrades to "no filters".
+  const loadCategories = useCallback(async () => {
+    try {
+      const { data } = await getPublicCategories()
+      setCategories(Array.isArray(data) ? data : [])
+    } catch {
+      setCategories([]) // filter row simply hides; products still load below
+    }
   }, [])
 
-  useEffect(() => {
-    setLoading(true)
-    const qs = activeCat ? `?categoryId=${activeCat}` : ''
-    axios.get(`/api/products${qs}`)
-      .then(r => setProducts(r.data))
-      .catch(() => setProducts([]))
-      .finally(() => setLoading(false))
+  useEffect(() => { loadCategories() }, [loadCategories])
+
+  const loadProducts = useCallback(async () => {
+    setLoading(true); setProdError(null)
+    try {
+      const { data } = await getPublicProducts({ categoryId: activeCat })
+      setProducts(Array.isArray(data) ? data : [])
+    } catch (err) {
+      // On failure keep prior products untouched and raise an error flag —
+      // never overwrite the grid with [] as if the catalog were empty.
+      setProdError(classifyError(err))
+    } finally {
+      setLoading(false)
+    }
   }, [activeCat])
+
+  useEffect(() => { loadProducts() }, [loadProducts])
 
   const handleAdd = (p) => {
     addItem({ id: p.id, name: p.name, price: p.price, emoji: p.emoji, unit: p.unit })
@@ -418,13 +563,29 @@ function CategoriesSection() {
                   </div>
                 </div>
               ))
+            : prodError
+            ? (
+                <ProductErrorState
+                  message={prodError.message}
+                  retryable={prodError.retryable}
+                  onRetry={loadProducts}
+                />
+              )
+            : products.length === 0
+            ? (
+                <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '60px 20px' }}>
+                  <div style={{ fontSize: 56 }}>🥛</div>
+                  <div style={{ fontSize: 18, fontWeight: 800, color: '#0f172a', marginTop: 12 }}>
+                    No products available yet
+                  </div>
+                  <div style={{ fontSize: 14, color: '#64748b', marginTop: 6 }}>
+                    Please check back soon.
+                  </div>
+                </div>
+              )
             : products.map((p, i) => {
                 const isAdded = addedId === p.id
-                const tagStyle = {
-                  best:  { background: '#fef3c7', color: '#d97706' },
-                  fresh: { background: '#dcfce7', color: '#15803d' },
-                  new:   { background: '#dbeafe', color: '#1d4ed8' },
-                }[p.tagType] || { background: '#f1f5f9', color: '#475569' }
+                const tagStyle = tagBadgeStyle(p.tagType)
 
                 return (
                   <div
@@ -436,36 +597,38 @@ function CategoriesSection() {
                       className="pub-hp-card-img"
                       style={{ background: p.bgGradient || 'linear-gradient(135deg,#f0fdf4,#dcfce7)' }}
                     >
-                      {p.imageUrl && (
-                        <img src={p.imageUrl} alt={p.name}
-                          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
-                      )}
+                      <ProductImage
+                        src={p.imageUrl}
+                        alt={p.name}
+                        fallback={p.emoji || '📦'}
+                        imgStyle={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+                        fallbackStyle={{ fontSize: 68 }}
+                      />
                       {p.tag && (
                         <span className="pub-hp-card-tag" style={tagStyle}>{p.tag}</span>
                       )}
-                      {p.originalPrice && (
+                      {discountPercent(p.price, p.originalPrice) !== null && (
                         <span style={{
                           position: 'absolute', top: 10, right: 10,
                           background: '#ef4444', color: '#fff',
                           fontSize: 10, fontWeight: 800,
                           padding: '3px 8px', borderRadius: 999,
                         }}>
-                          -{Math.round((1 - p.price / p.originalPrice) * 100)}%
+                          -{discountPercent(p.price, p.originalPrice)}%
                         </span>
                       )}
-                      {!p.imageUrl && <span style={{ fontSize: 68, lineHeight: 1 }}>{p.emoji}</span>}
                     </div>
                     <div className="pub-hp-card-body">
                       <div className="pub-hp-card-name">{p.name}</div>
                       <div className="pub-hp-card-desc">{p.description}</div>
                       <div className="pub-hp-card-foot">
                         <div>
-                          {p.originalPrice && (
+                          {discountPercent(p.price, p.originalPrice) !== null && (
                             <div style={{ fontSize: 11, color: '#94a3b8', textDecoration: 'line-through', lineHeight: 1, marginBottom: 2 }}>
-                              ₹{parseFloat(p.originalPrice).toFixed(0)}
+                              {formatPrice(p.originalPrice)}
                             </div>
                           )}
-                          <div className="pub-hp-card-price">₹{parseFloat(p.price).toFixed(0)}</div>
+                          <div className="pub-hp-card-price">{formatPrice(p.price)}</div>
                           <div className="pub-hp-card-unit">{p.unit}</div>
                         </div>
                         <button

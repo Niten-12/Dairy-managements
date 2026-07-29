@@ -7,7 +7,7 @@ export const HERO = {
   /* ── Badge (top pill) ────────────────────── */
   badge: {
     emoji: '🌿',
-    text:  '100% Natural & Pure Dairy',
+    text:  '100% Organic',
   },
 
   /* ── Headline ────────────────────────────── */
@@ -19,6 +19,12 @@ export const HERO = {
 
   /* ── Subtitle ────────────────────────────── */
   subtitle: 'Milk, paneer, ghee & more — zero adulteration, doorstep delivery every morning.',
+
+  /* ── Mobile/tablet hero (≤1024px dedicated design) ── */
+  mobileHero: {
+    accent:   '100% FRESH & ORGANIC',
+    headline: ['Moo-re Fresh,', 'Moo-re Happy! 🐄'],
+  },
 
   /* ── CTA Buttons ─────────────────────────── */
   cta: {

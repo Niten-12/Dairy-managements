@@ -1,5 +1,8 @@
 import { StrictMode, Suspense } from 'react'
 import { createRoot } from 'react-dom/client'
+import '@fontsource/pacifico'
+import '@fontsource/caveat/700.css'
+import '@fontsource/permanent-marker'
 import './i18n/index.js'
 import './styles/global.css'
 import App from './App'

@@ -1,7 +1,11 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import axios from 'axios'
 import { useCart } from '../../context/CartContext'
+import { getPublicProducts, getPublicCategories } from '../../api/publicProductApi'
+import { classifyError } from '../../utils/apiError'
+import { formatPrice, discountPercent, tagBadgeStyle } from '../../utils/productDisplay'
+import ProductErrorState from '../../components/public/ProductErrorState'
+import ProductImage from '../../components/public/ProductImage'
 
 
 /* ── Skeleton loader ──────────────────────────────────────── */
@@ -35,11 +39,7 @@ function ProductCard({ product, onAdd, onView }) {
     setTimeout(() => setAdded(false), 1500)
   }
 
-  const tagClass = {
-    best:  { bg: '#fef3c7', color: '#d97706' },
-    fresh: { bg: '#dcfce7', color: '#15803d' },
-    new:   { bg: '#dbeafe', color: '#1d4ed8' },
-  }[product.tagType] || { bg: '#f1f5f9', color: '#475569' }
+  const tagClass = tagBadgeStyle(product.tagType)
 
   return (
     <div
@@ -69,31 +69,33 @@ function ProductCard({ product, onAdd, onView }) {
         background: product.bgGradient || 'linear-gradient(135deg,#f0fdf4,#dcfce7)',
         flexShrink: 0, overflow: 'hidden',
       }}>
-        {product.imageUrl && (
-          <img src={product.imageUrl} alt={product.name}
-            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
-        )}
+        <ProductImage
+          src={product.imageUrl}
+          alt={product.name}
+          fallback={product.emoji || '📦'}
+          imgStyle={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+          fallbackStyle={{ fontSize: 78 }}
+        />
         {product.tag && (
           <span style={{
             position: 'absolute', top: 12, left: 12,
             padding: '4px 10px', borderRadius: 9999,
             fontSize: 10.5, fontWeight: 700, letterSpacing: '0.03em',
-            background: tagClass.bg, color: tagClass.color,
+            background: tagClass.background, color: tagClass.color,
           }}>
             {product.tag}
           </span>
         )}
-        {product.originalPrice && (
+        {discountPercent(product.price, product.originalPrice) !== null && (
           <span style={{
             position: 'absolute', top: 12, right: 12,
             background: '#ef4444', color: '#fff',
             fontSize: 10, fontWeight: 800,
             padding: '3px 9px', borderRadius: 999,
           }}>
-            -{Math.round((1 - product.price / product.originalPrice) * 100)}%
+            -{discountPercent(product.price, product.originalPrice)}%
           </span>
         )}
-        {!product.imageUrl && <span style={{ lineHeight: 1, userSelect: 'none' }}>{product.emoji}</span>}
       </div>
 
       {/* Body */}
@@ -111,13 +113,13 @@ function ProductCard({ product, onAdd, onView }) {
         </div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
-            {product.originalPrice && (
+            {discountPercent(product.price, product.originalPrice) !== null && (
               <div style={{ fontSize: 12, color: '#94a3b8', textDecoration: 'line-through', lineHeight: 1, marginBottom: 3 }}>
-                ₹{parseFloat(product.originalPrice).toFixed(0)}
+                {formatPrice(product.originalPrice)}
               </div>
             )}
             <div style={{ fontSize: 20, fontWeight: 900, color: '#16a34a', lineHeight: 1 }}>
-              ₹{parseFloat(product.price).toFixed(0)}
+              {formatPrice(product.price)}
             </div>
             <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>{product.unit}</div>
           </div>
@@ -150,31 +152,46 @@ function Products() {
   const { addItem }    = useCart()
 
   const [categories,  setCategories]  = useState([])
+  const [catError,    setCatError]    = useState(false) // categories are a filter aid; a boolean flag is enough
   const [products,    setProducts]    = useState([])
   const [loading,     setLoading]     = useState(true)
+  const [prodError,   setProdError]   = useState(null)  // classified error or null
   const [activeCat,   setActiveCat]   = useState(null)
   const [search,      setSearch]      = useState(params.get('search') || '')
   const [searchInput, setSearchInput] = useState(params.get('search') || '')
   const searchTimer = useRef(null)
 
-  /* fetch categories once */
-  useEffect(() => {
-    axios.get(`/api/products/categories`)
-      .then((r) => setCategories(r.data))
-      .catch(console.error)
+  /* Categories load independently — a category failure degrades to "no filter
+     pills" and must never blank the product grid. */
+  const loadCategories = useCallback(async () => {
+    setCatError(false)
+    try {
+      const { data } = await getPublicCategories()
+      setCategories(Array.isArray(data) ? data : [])
+    } catch {
+      setCatError(true)
+      setCategories([])
+    }
   }, [])
 
-  /* fetch products when filter changes */
-  useEffect(() => {
-    setLoading(true)
-    const qp = new URLSearchParams()
-    if (activeCat) qp.set('categoryId', activeCat)
-    if (search)    qp.set('search', search)
-    axios.get(`/api/products?${qp}`)
-      .then((r) => setProducts(r.data))
-      .catch(console.error)
-      .finally(() => setLoading(false))
+  useEffect(() => { loadCategories() }, [loadCategories])
+
+  /* Products load on filter/search change. On failure we set an explicit error
+     (never overwrite the grid with []) so failure is distinguishable from a
+     genuinely empty result. */
+  const loadProducts = useCallback(async () => {
+    setLoading(true); setProdError(null)
+    try {
+      const { data } = await getPublicProducts({ categoryId: activeCat, search })
+      setProducts(Array.isArray(data) ? data : [])
+    } catch (err) {
+      setProdError(classifyError(err))
+    } finally {
+      setLoading(false)
+    }
   }, [activeCat, search])
+
+  useEffect(() => { loadProducts() }, [loadProducts])
 
   /* debounced search */
   const handleSearchInput = (val) => {
@@ -284,6 +301,20 @@ function Products() {
               {cat.emoji} {cat.name}
             </button>
           ))}
+          {/* Categories failed to load — degrade to "All Products" only, with a
+              quiet retry. Products below are unaffected. */}
+          {catError && (
+            <button
+              onClick={loadCategories}
+              style={{
+                padding: '8px 14px', borderRadius: 9999, fontSize: 12,
+                fontWeight: 600, cursor: 'pointer', border: '1.5px solid #fecaca',
+                background: '#fef2f2', color: '#ef4444',
+              }}
+            >
+              ↻ Categories unavailable — retry
+            </button>
+          )}
         </div>
 
         {/* ── Result count ────────────────────────── */}
@@ -292,8 +323,8 @@ function Products() {
           marginBottom: 20,
         }}>
           <div style={{ fontSize: 14, color: '#64748b', fontWeight: 600 }}>
-            {loading ? 'Loading...' : `${products.length} products found`}
-            {search && (
+            {loading ? 'Loading...' : prodError ? '' : `${products.length} products found`}
+            {!loading && !prodError && search && (
               <span style={{ color: '#16a34a' }}> for "{search}"</span>
             )}
           </div>
@@ -319,29 +350,39 @@ function Products() {
         }}>
           {loading
             ? Array.from({ length: 8 }).map((_, i) => <ProductSkeleton key={i} />)
-            : products.length === 0
+            : prodError
+              // API failure — NOT an empty catalog. Show a retryable error.
               ? (
-                <div style={{
-                  gridColumn: '1/-1', textAlign: 'center',
-                  padding: '60px 20px',
-                }}>
-                  <div style={{ fontSize: 56 }}>🔍</div>
-                  <div style={{ fontSize: 18, fontWeight: 800, color: '#0f172a', marginTop: 12 }}>
-                    No products found
-                  </div>
-                  <div style={{ fontSize: 14, color: '#64748b', marginTop: 6 }}>
-                    Try a different search or category
-                  </div>
-                </div>
-              )
-              : products.map((p) => (
-                <ProductCard
-                  key={p.id}
-                  product={p}
-                  onAdd={addItem}
-                  onView={(id) => navigate(`/products/${id}`)}
+                <ProductErrorState
+                  message={prodError.message}
+                  retryable={prodError.retryable}
+                  onRetry={loadProducts}
                 />
-              ))
+              )
+              : products.length === 0
+                // Genuine empty result (request succeeded, no matches).
+                ? (
+                  <div style={{
+                    gridColumn: '1/-1', textAlign: 'center',
+                    padding: '60px 20px',
+                  }}>
+                    <div style={{ fontSize: 56 }}>🔍</div>
+                    <div style={{ fontSize: 18, fontWeight: 800, color: '#0f172a', marginTop: 12 }}>
+                      {search || activeCat ? 'No products found' : 'No products available yet'}
+                    </div>
+                    <div style={{ fontSize: 14, color: '#64748b', marginTop: 6 }}>
+                      {search || activeCat ? 'Try a different search or category' : 'Please check back soon.'}
+                    </div>
+                  </div>
+                )
+                : products.map((p) => (
+                  <ProductCard
+                    key={p.id}
+                    product={p}
+                    onAdd={addItem}
+                    onView={(id) => navigate(`/products/${id}`)}
+                  />
+                ))
           }
         </div>
       </div>

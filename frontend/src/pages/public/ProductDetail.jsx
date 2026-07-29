@@ -1,7 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import axios from 'axios'
 import { useCart } from '../../context/CartContext'
+import { getPublicProductById } from '../../api/publicProductApi'
+import { classifyError, ErrorTypes } from '../../utils/apiError'
+import { formatPrice, discountPercent, toPrice, tagBadgeStyle } from '../../utils/productDisplay'
+import ProductImage from '../../components/public/ProductImage'
 
 
 function ProductDetail() {
@@ -11,16 +14,31 @@ function ProductDetail() {
 
   const [product, setProduct] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [error,   setError]   = useState(null) // classified error or null
   const [qty,     setQty]     = useState(1)
   const [added,   setAdded]   = useState(false)
 
-  useEffect(() => {
-    setLoading(true)
-    axios.get(`/api/products/${id}`)
-      .then((r) => setProduct(r.data))
-      .catch(() => navigate('/products'))
-      .finally(() => setLoading(false))
+  const load = useCallback(async () => {
+    setLoading(true); setError(null)
+    try {
+      const { data } = await getPublicProductById(id)
+      setProduct(data)
+    } catch (err) {
+      // Only a genuine 404 means "this product does not exist" → send the user
+      // back to the catalog. A network blip or 5xx is a transient failure and
+      // must NOT be turned into a navigation glitch — show a retryable error.
+      const classified = classifyError(err)
+      if (classified.type === ErrorTypes.NOT_FOUND) {
+        navigate('/products', { replace: true })
+        return
+      }
+      setError(classified)
+    } finally {
+      setLoading(false)
+    }
   }, [id, navigate])
+
+  useEffect(() => { load() }, [load])
 
   const handleAdd = () => {
     for (let i = 0; i < qty; i++) addItem(product)
@@ -39,13 +57,33 @@ function ProductDetail() {
     </div>
   )
 
+  // Transient failure (network / 5xx) — offer retry, don't silently redirect.
+  if (error) return (
+    <div style={{
+      minHeight: '100vh', paddingTop: 'var(--pub-navbar-height)', background: '#f8fafc',
+      display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24,
+    }}>
+      <div style={{ textAlign: 'center', maxWidth: 380 }}>
+        <div style={{ fontSize: 56 }}>⚠️</div>
+        <div style={{ fontSize: 20, fontWeight: 800, color: '#0f172a', marginTop: 12 }}>
+          Couldn't load this product
+        </div>
+        <div style={{ fontSize: 14, color: '#64748b', marginTop: 8 }}>{error.message}</div>
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'center', marginTop: 20 }}>
+          {error.retryable && (
+            <button className="pub-btn pub-btn-primary pub-btn-sm" onClick={load}>↻ Try again</button>
+          )}
+          <button className="pub-btn pub-btn-outline pub-btn-sm" onClick={() => navigate('/products')}>
+            ← Back to products
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+
   if (!product) return null
 
-  const tagClass = {
-    best:  { bg: '#fef3c7', color: '#d97706' },
-    fresh: { bg: '#dcfce7', color: '#15803d' },
-    new:   { bg: '#dbeafe', color: '#1d4ed8' },
-  }[product.tagType] || { bg: '#f1f5f9', color: '#475569' }
+  const tagClass = tagBadgeStyle(product.tagType)
 
   return (
     <div style={{ background: '#f8fafc', minHeight: '100vh', paddingTop: 'var(--pub-navbar-height)' }}>
@@ -75,17 +113,19 @@ function ProductDetail() {
             fontSize: 140, position: 'relative', overflow: 'hidden',
             boxShadow: '0 8px 32px rgba(0,0,0,0.08)',
           }}>
-            {product.imageUrl
-              ? <img src={product.imageUrl} alt={product.name}
-                  style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
-              : <span style={{ lineHeight: 1 }}>{product.emoji}</span>
-            }
+            <ProductImage
+              src={product.imageUrl}
+              alt={product.name}
+              fallback={product.emoji || '📦'}
+              imgStyle={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+              fallbackStyle={{ fontSize: 140 }}
+            />
             {product.tag && (
               <span style={{
                 position: 'absolute', top: 16, left: 16,
                 padding: '6px 14px', borderRadius: 9999,
                 fontSize: 12, fontWeight: 700,
-                background: tagClass.bg, color: tagClass.color,
+                background: tagClass.background, color: tagClass.color,
               }}>
                 {product.tag}
               </span>
@@ -111,20 +151,20 @@ function ProductDetail() {
             {/* Price */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
               <span style={{ fontSize: 36, fontWeight: 900, color: '#16a34a', lineHeight: 1 }}>
-                ₹{parseFloat(product.price).toFixed(0)}
+                {formatPrice(product.price)}
               </span>
               <span style={{ fontSize: 15, color: '#64748b' }}>/ {product.unit}</span>
-              {product.originalPrice && (
+              {discountPercent(product.price, product.originalPrice) !== null && (
                 <>
                   <span style={{ fontSize: 18, color: '#94a3b8', textDecoration: 'line-through' }}>
-                    ₹{parseFloat(product.originalPrice).toFixed(0)}
+                    {formatPrice(product.originalPrice)}
                   </span>
                   <span style={{
                     fontSize: 13, fontWeight: 800, padding: '4px 10px',
                     background: '#fef2f2', color: '#ef4444', borderRadius: 999,
                     border: '1px solid #fecaca',
                   }}>
-                    {Math.round((1 - product.price / product.originalPrice) * 100)}% OFF
+                    {discountPercent(product.price, product.originalPrice)}% OFF
                   </span>
                 </>
               )}
@@ -197,7 +237,11 @@ function ProductDetail() {
                 style={{ flex: 1, justifyContent: 'center' }}
                 onClick={handleAdd}
               >
-                {added ? '✓ Added to Cart!' : `🛒 Add to Cart — ₹${(parseFloat(product.price) * qty).toFixed(0)}`}
+                {added
+                  ? '✓ Added to Cart!'
+                  : toPrice(product.price) === null
+                    ? '🛒 Add to Cart'
+                    : `🛒 Add to Cart — ${formatPrice(toPrice(product.price) * qty)}`}
               </button>
             </div>
 

@@ -113,8 +113,9 @@ class AdminUserControllerTest {
     @Test
     @DisplayName("PATCH /{id}/toggle-status on admin account throws 403")
     void toggleStatus_adminAccount_throws403() {
+        // no auth.getName() stub — the controller rejects admin targets
+        // before it ever reads the caller's principal
         when(userRepository.findById(99L)).thenReturn(Optional.of(admin));
-        when(auth.getName()).thenReturn("admin@dairy.com");
 
         assertThatThrownBy(() -> controller.toggleStatus(99L, auth))
                 .hasMessageContaining("Cannot deactivate admin accounts");
@@ -157,8 +158,9 @@ class AdminUserControllerTest {
     @Test
     @DisplayName("DELETE /{id} on admin account throws 403")
     void deleteUser_adminAccount_throws403() {
+        // no auth.getName() stub — the controller rejects admin targets
+        // before it ever reads the caller's principal
         when(userRepository.findById(99L)).thenReturn(Optional.of(admin));
-        when(auth.getName()).thenReturn("admin@dairy.com");
 
         assertThatThrownBy(() -> controller.deleteUser(99L, auth))
                 .hasMessageContaining("Cannot delete admin accounts");

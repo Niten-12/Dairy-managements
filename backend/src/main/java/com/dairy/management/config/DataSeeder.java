@@ -61,21 +61,21 @@ public class DataSeeder implements CommandLineRunner {
                 .description("Rich, creamy cow milk. Pasteurised & homogenised. No preservatives.")
                 .price(new BigDecimal("28")).originalPrice(new BigDecimal("32"))
                 .unit("500 ml").emoji("🥛")
-                .tag("BESTSELLER").tagType("best")
+                .tag("BESTSELLER").tagType("success")
                 .bgGradient("linear-gradient(135deg,#f0fdf4,#dcfce7)")
                 .featured(true).stock(200).sortOrder(1).build());
 
         saveProduct(Product.builder().name("Full Cream Milk 1L").category(milk)
                 .description("Same farm-fresh full cream milk — bigger pack for bigger families.")
                 .price(new BigDecimal("52")).unit("1 L").emoji("🥛")
-                .tag("POPULAR").tagType("best")
+                .tag("POPULAR").tagType("success")
                 .bgGradient("linear-gradient(135deg,#f0fdf4,#dcfce7)")
                 .featured(false).stock(200).sortOrder(2).build());
 
         saveProduct(Product.builder().name("Toned Milk").category(milk)
                 .description("Light toned milk with 3% fat. Perfect for tea, coffee & daily use.")
                 .price(new BigDecimal("24")).unit("500 ml").emoji("🧉")
-                .tag("LIGHT").tagType("fresh")
+                .tag("LIGHT").tagType("success")
                 .bgGradient("linear-gradient(135deg,#ecfdf5,#d1fae5)")
                 .featured(false).stock(150).sortOrder(3).build());
 
@@ -83,14 +83,14 @@ public class DataSeeder implements CommandLineRunner {
                 .description("Premium A2 beta-casein milk from indigenous Gir & Sahiwal cows. Easily digestible.")
                 .price(new BigDecimal("42")).originalPrice(new BigDecimal("55"))
                 .unit("500 ml").emoji("🐄")
-                .tag("A2 PURE").tagType("new")
+                .tag("A2 PURE").tagType("info")
                 .bgGradient("linear-gradient(135deg,#fef9ee,#fef3c7)")
                 .featured(true).stock(100).sortOrder(4).build());
 
         saveProduct(Product.builder().name("Buffalo Milk").category(milk)
                 .description("Thick, rich buffalo milk with 6-8% fat. Ideal for making paneer & sweets.")
                 .price(new BigDecimal("34")).unit("500 ml").emoji("🐃")
-                .tag("RICH FAT").tagType("best")
+                .tag("RICH FAT").tagType("success")
                 .bgGradient("linear-gradient(135deg,#fdf4ff,#f3e8ff)")
                 .featured(false).stock(120).sortOrder(5).build());
 
@@ -103,14 +103,14 @@ public class DataSeeder implements CommandLineRunner {
         saveProduct(Product.builder().name("Fresh Paneer").category(paneer)
                 .description("Soft, moist paneer made from farm-fresh whole milk. Same-day delivery.")
                 .price(new BigDecimal("80")).unit("200 g").emoji("🧀")
-                .tag("FRESH TODAY").tagType("fresh")
+                .tag("FRESH TODAY").tagType("success")
                 .bgGradient("linear-gradient(135deg,#fffbeb,#fef3c7)")
                 .featured(true).stock(80).sortOrder(1).build());
 
         saveProduct(Product.builder().name("Fresh Paneer 500g").category(paneer)
                 .description("Family pack of soft, fresh paneer. Perfect for daily cooking.")
                 .price(new BigDecimal("195")).unit("500 g").emoji("🧀")
-                .tag("FAMILY PACK").tagType("best")
+                .tag("FAMILY PACK").tagType("success")
                 .bgGradient("linear-gradient(135deg,#fffbeb,#fef3c7)")
                 .featured(false).stock(60).sortOrder(2).build());
 
@@ -118,7 +118,7 @@ public class DataSeeder implements CommandLineRunner {
                 .description("Extra-rich malai paneer with high cream content. Melt-in-mouth texture.")
                 .price(new BigDecimal("95")).originalPrice(new BigDecimal("115"))
                 .unit("200 g").emoji("🧈")
-                .tag("PREMIUM").tagType("new")
+                .tag("PREMIUM").tagType("info")
                 .bgGradient("linear-gradient(135deg,#fef9ee,#fde68a44)")
                 .featured(false).stock(50).sortOrder(3).build());
 
@@ -132,21 +132,21 @@ public class DataSeeder implements CommandLineRunner {
                 .description("Traditionally churned Bilona ghee from grass-fed desi cows. Rich in CLA & Omega-3.")
                 .price(new BigDecimal("550")).originalPrice(new BigDecimal("649"))
                 .unit("500 ml").emoji("🧈")
-                .tag("PURE A2").tagType("new")
+                .tag("PURE A2").tagType("info")
                 .bgGradient("linear-gradient(135deg,#fef9ee,#fde68a44)")
                 .featured(true).stock(60).sortOrder(1).build());
 
         saveProduct(Product.builder().name("Pure Cow Ghee 1L").category(ghee)
                 .description("1 litre of authentic desi cow ghee. Best value family pack.")
                 .price(new BigDecimal("1050")).unit("1 L").emoji("🧈")
-                .tag("BEST VALUE").tagType("best")
+                .tag("BEST VALUE").tagType("success")
                 .bgGradient("linear-gradient(135deg,#fef9ee,#fde68a44)")
                 .featured(false).stock(40).sortOrder(2).build());
 
         saveProduct(Product.builder().name("Unsalted Butter").category(ghee)
                 .description("Creamy, fresh unsalted butter churned daily. Perfect for baking & cooking.")
                 .price(new BigDecimal("65")).unit("100 g").emoji("🟡")
-                .tag("FRESH").tagType("fresh")
+                .tag("FRESH").tagType("success")
                 .bgGradient("linear-gradient(135deg,#fffbeb,#fef9c3)")
                 .featured(false).stock(90).sortOrder(3).build());
 
@@ -159,7 +159,7 @@ public class DataSeeder implements CommandLineRunner {
         saveProduct(Product.builder().name("Thick Curd").category(curd)
                 .description("Set curd made fresh daily. Rich in probiotics for a healthy gut.")
                 .price(new BigDecimal("45")).unit("400 g").emoji("🍦")
-                .tag("PROBIOTIC").tagType("fresh")
+                .tag("PROBIOTIC").tagType("success")
                 .bgGradient("linear-gradient(135deg,#eff6ff,#dbeafe)")
                 .featured(true).stock(120).sortOrder(1).build());
 
@@ -167,14 +167,14 @@ public class DataSeeder implements CommandLineRunner {
                 .description("Thick, strained Greek-style yogurt. High protein, low sugar, creamy texture.")
                 .price(new BigDecimal("55")).originalPrice(new BigDecimal("70"))
                 .unit("150 g").emoji("🥣")
-                .tag("HIGH PROTEIN").tagType("new")
+                .tag("HIGH PROTEIN").tagType("info")
                 .bgGradient("linear-gradient(135deg,#f0fdf4,#dcfce7)")
                 .featured(false).stock(80).sortOrder(2).build());
 
         saveProduct(Product.builder().name("Mishti Doi").category(curd)
                 .description("Traditional Bengali sweet curd — perfectly caramelised and smooth.")
                 .price(new BigDecimal("60")).unit("200 g").emoji("🍮")
-                .tag("SPECIAL").tagType("best")
+                .tag("SPECIAL").tagType("success")
                 .bgGradient("linear-gradient(135deg,#fdf4ff,#f3e8ff)")
                 .featured(false).stock(60).sortOrder(3).build());
 
@@ -187,7 +187,7 @@ public class DataSeeder implements CommandLineRunner {
         saveProduct(Product.builder().name("Desi Eggs (6 pcs)").category(eggs)
                 .description("Free-range desi eggs from happy hens. Rich yolk, high protein, hormone-free.")
                 .price(new BigDecimal("52")).unit("6 pcs").emoji("🥚")
-                .tag("FREE RANGE").tagType("fresh")
+                .tag("FREE RANGE").tagType("success")
                 .bgGradient("linear-gradient(135deg,#fdf4ff,#f3e8ff)")
                 .featured(false).stock(200).sortOrder(1).build());
 
@@ -195,14 +195,14 @@ public class DataSeeder implements CommandLineRunner {
                 .description("12 farm-fresh desi eggs. No antibiotics, no hormones — purely natural.")
                 .price(new BigDecimal("95")).originalPrice(new BigDecimal("110"))
                 .unit("12 pcs").emoji("🥚")
-                .tag("BESTSELLER").tagType("best")
+                .tag("BESTSELLER").tagType("success")
                 .bgGradient("linear-gradient(135deg,#fdf4ff,#f3e8ff)")
                 .featured(true).stock(200).sortOrder(2).build());
 
         saveProduct(Product.builder().name("Brown Eggs (6 pcs)").category(eggs)
                 .description("Premium brown-shelled eggs with extra-rich dark yolk. Omega-3 enriched.")
                 .price(new BigDecimal("65")).unit("6 pcs").emoji("🟤")
-                .tag("OMEGA-3").tagType("new")
+                .tag("OMEGA-3").tagType("info")
                 .bgGradient("linear-gradient(135deg,#fff7ed,#fed7aa)")
                 .featured(false).stock(150).sortOrder(3).build());
 
@@ -215,14 +215,14 @@ public class DataSeeder implements CommandLineRunner {
         saveProduct(Product.builder().name("Chocolate Milk").category(flavoured)
                 .description("Real milk blended with natural cocoa. No artificial flavours. Kids love it!")
                 .price(new BigDecimal("35")).unit("200 ml").emoji("🍫")
-                .tag("KIDS FAVE").tagType("best")
+                .tag("KIDS FAVE").tagType("success")
                 .bgGradient("linear-gradient(135deg,#fdf4ff,#f3e8ff)")
                 .featured(false).stock(150).sortOrder(1).build());
 
         saveProduct(Product.builder().name("Strawberry Milk").category(flavoured)
                 .description("Fresh milk with real strawberry puree. No artificial colours or preservatives.")
                 .price(new BigDecimal("35")).unit("200 ml").emoji("🍓")
-                .tag("NATURAL").tagType("fresh")
+                .tag("NATURAL").tagType("success")
                 .bgGradient("linear-gradient(135deg,#fff1f2,#ffe4e6)")
                 .featured(false).stock(150).sortOrder(2).build());
 
@@ -230,7 +230,7 @@ public class DataSeeder implements CommandLineRunner {
                 .description("Full cream milk enriched with almond paste and saffron. Traditional recipe.")
                 .price(new BigDecimal("48")).originalPrice(new BigDecimal("58"))
                 .unit("200 ml").emoji("🌰")
-                .tag("PREMIUM").tagType("new")
+                .tag("PREMIUM").tagType("info")
                 .bgGradient("linear-gradient(135deg,#fef9ee,#fef3c7)")
                 .featured(false).stock(100).sortOrder(3).build());
     }

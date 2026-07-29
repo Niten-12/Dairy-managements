@@ -1082,6 +1082,46 @@
 /* adcard entrance animation */
 .pub-ha-adcard { animation: pub-scale-spring 0.55s 0.42s both; }
 
+/* ── HERO FARM ILLUSTRATION (mobile/tablet only, ≤1024px) ────── */
+.pub-hero-farm-illustration {
+  display: none;
+  width: 100%;
+  max-width: 300px;
+  margin: 4px auto 2px;
+}
+
+/* Mobile-only hand-lettered hero header — hidden on desktop */
+.pub-hero-m-accent,
+.pub-hero-m-title { display: none; }
+
+.pfa-bob-a { animation: pfa-bob 3.4s ease-in-out infinite; transform-box: fill-box; }
+.pfa-bob-b { animation: pfa-bob 3.8s ease-in-out infinite 0.4s; transform-box: fill-box; }
+@keyframes pfa-bob {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-3px); }
+}
+
+.pfa-tail { animation: pfa-tail-swish 2.2s ease-in-out infinite; }
+@keyframes pfa-tail-swish {
+  0%, 100% { transform: rotate(-6deg); }
+  50%      { transform: rotate(8deg); }
+}
+
+.pfa-blink-a { animation: pfa-blink 4.2s ease-in-out infinite; }
+.pfa-blink-b { animation: pfa-blink 5.1s ease-in-out infinite 0.6s; }
+@keyframes pfa-blink {
+  0%, 92%, 100% { transform: scaleY(1); }
+  96%           { transform: scaleY(0.12); }
+}
+
+.pfa-float-a { animation: pfa-float 3.2s ease-in-out infinite; }
+.pfa-float-b { animation: pfa-float 4s ease-in-out infinite 0.5s; }
+.pfa-float-c { animation: pfa-float 3.6s ease-in-out infinite 1s; }
+@keyframes pfa-float {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-4px); }
+}
+
 /* ── HERO TICKER ────────────────────────────────────────────── */
 .pub-hero-ticker {
   width: 100%;
@@ -1591,12 +1631,110 @@
 
 /* ── RESPONSIVE ─────────────────────────────────────────────── */
 
-/* 1024px — Laptop */
+/* 1024px — Laptop / iPad — Hero gets its own dedicated (not squished) layout */
 @media (max-width: 1024px) {
   .pub-cats-grid   { grid-template-columns: repeat(3, 1fr); }
   .pub-hp-grid     { grid-template-columns: repeat(3, 1fr); }
   .pub-strip-grid  { grid-template-columns: repeat(2, 1fr); }
   .pub-footer-grid { grid-template-columns: 1fr 1fr; gap: 28px; }
+
+  /* Hero: single col, swap ad-card for the farm illustration */
+  .pub-hero-grid       { grid-template-columns: 1fr; gap: 0; padding: 32px 32px 40px; }
+  .pub-hero-adcard      { display: none; }
+  .pub-hero-farm-illustration { display: block; max-width: 260px; }
+  .pub-hero-left        { align-items: center; text-align: center; gap: 16px; }
+  .pub-hero-ctas        { justify-content: center; }
+  .pub-hero-trust       { justify-content: center; }
+  .pub-hero-subtitle    { max-width: 520px; }
+
+  /* ── Premium organic-dairy hero theme (mobile/tablet only) ──
+     Deep forest-green backdrop with center glow + vignette edges,
+     white brush-script heading + yellow marker accent — like
+     premium organic milk packaging. */
+  .pub-hero {
+    background:
+      radial-gradient(ellipse 120% 60% at 50% 34%, rgba(74,222,128,0.22) 0%, transparent 60%),
+      radial-gradient(ellipse 90% 45% at 50% 100%, rgba(2,44,20,0.55) 0%, transparent 70%),
+      radial-gradient(ellipse 70% 40% at 8% 4%, rgba(253,224,71,0.08) 0%, transparent 60%),
+      linear-gradient(172deg, #052e16 0%, #14532d 34%, #15803d 62%, #0c3f1f 100%);
+  }
+  .pub-hero-orb1 { background: radial-gradient(circle, rgba(134,239,172,0.22) 0%, transparent 70%); }
+  .pub-hero-orb2 { background: radial-gradient(circle, rgba(253,224,71,0.14) 0%, transparent 70%); }
+  .pub-hero-orb3 { background: radial-gradient(circle, rgba(74,222,128,0.16) 0%, transparent 70%); }
+
+  /* Desktop badge / headline / subtitle hidden — mobile has its own header */
+  .pub-hero-badge,
+  .pub-hero-title,
+  .pub-hero-subtitle { display: none; }
+
+  /* Accent header — thick hand-painted marker, bright yellow */
+  .pub-hero-m-accent {
+    display: block;
+    font-family: 'Permanent Marker', cursive;
+    font-weight: 400;
+    font-size: clamp(1.15rem, 4.6vw, 1.6rem);
+    color: #fde047;
+    letter-spacing: 0.045em;
+    line-height: 1.15;
+    transform: rotate(-2deg);
+    text-shadow:
+      0 1px 0 rgba(202,138,4,0.55),
+      0 2px 0 rgba(133,77,14,0.35),
+      0 4px 16px rgba(0,0,0,0.35);
+  }
+
+  /* Main heading — thick flowing white brush script, 2 centered lines */
+  .pub-hero-m-title {
+    display: block;
+    margin: 0;
+    width: 100%;
+    text-align: center;
+    font-family: 'Pacifico', cursive;
+    font-weight: 400;
+    color: #fff;
+    font-size: clamp(1.9rem, 7vw, 3.1rem);
+    line-height: 1.45;
+    letter-spacing: 0.01em;
+    text-shadow:
+      0 2px 0 rgba(2,44,20,0.35),
+      0 5px 22px rgba(0,0,0,0.35),
+      0 1px 3px rgba(0,0,0,0.25);
+  }
+
+  /* Navbar over the dark hero — light logo + hamburger */
+  .pub-nav-onhero .pub-logo-text { color: #fff; }
+  .pub-nav-onhero .pub-logo-text .pub-logo-accent { color: #86efac; }
+  .pub-nav-onhero .pub-hamburger { border-color: rgba(255,255,255,0.45); }
+  .pub-nav-onhero .pub-hamburger span { background: #fff; }
+
+  .pub-hero-trust-item { color: rgba(255,255,255,0.92); }
+  .pub-hero-trust-sep  { background: rgba(255,255,255,0.35); }
+
+  /* CTAs — single compact row */
+  .pub-hero-ctas { flex-direction: row; flex-wrap: nowrap; justify-content: center; gap: 10px; }
+  .pub-hero-ctas .pub-btn {
+    padding: 10px 18px;
+    font-size: 13.5px;
+    white-space: nowrap;
+  }
+  .pub-hero-ctas .pub-btn-outline {
+    color: #fff;
+    border-color: rgba(255,255,255,0.65);
+  }
+  .pub-hero-ctas .pub-btn-outline:hover {
+    background: rgba(255,255,255,0.12);
+  }
+
+  /* Ticker strip — glassy dark */
+  .pub-hero-ticker {
+    background: rgba(255,255,255,0.10);
+    border-bottom: 1px solid rgba(255,255,255,0.14);
+  }
+  .pub-hero-ticker-pill { color: rgba(255,255,255,0.92); }
+  .pub-hero-ticker-sep  { color: rgba(253,224,71,0.75); }
+
+  /* Search — hidden on mobile hero; inline display:flex needs the override */
+  .pub-hero-search-form { display: none !important; }
 }
 
 /* 768px — Tablet / Mobile */
@@ -1610,11 +1748,10 @@
   .pub-navbar-ctas { display: none; }
   .pub-hamburger   { display: flex; }
 
-  /* Hero: single col, hide ad card */
-  .pub-hero-grid    { grid-template-columns: 1fr; gap: 0; padding: 24px 20px 32px; }
-  .pub-hero-adcard  { display: none; }
+  /* Hero: tighter padding for phones */
+  .pub-hero-grid    { padding: 24px 20px 32px; }
   .pub-hero-left    { gap: 14px; }
-  .pub-hero-title   { font-size: clamp(1.75rem, 6vw, 2.4rem); }
+  .pub-hero-farm-illustration { max-width: 220px; }
 
   /* Ticker: single-row horizontal scroll, no wrap */
   .pub-hero-ticker       { overflow-x: auto; overflow-y: hidden; padding: 8px 0; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
@@ -1677,11 +1814,9 @@
 
   /* Hero: even more compact */
   .pub-hero-grid  { padding: 22px 14px 28px; }
-  .pub-hero-title { font-size: clamp(1.55rem, 7.5vw, 1.9rem); }
-  .pub-hero-subtitle { font-size: 0.88rem; }
-  .pub-hero-badge { font-size: 11px; padding: 5px 12px; }
-  .pub-hero-ctas  { flex-direction: column; align-items: stretch; gap: 10px; }
-  .pub-hero-ctas .pub-btn { justify-content: center; }
+  .pub-hero-m-title { font-size: clamp(1.65rem, 7.2vw, 2.1rem); }
+  .pub-hero-m-accent { font-size: clamp(1.05rem, 4.4vw, 1.3rem); }
+  .pub-hero-ctas .pub-btn { justify-content: center; padding: 9px 15px; font-size: 13px; }
   .pub-hero-trust { flex-wrap: wrap; gap: 6px 12px; }
   .pub-hero-trust-sep { display: none; }
   .pub-hero-trust-item { font-size: 12px; }

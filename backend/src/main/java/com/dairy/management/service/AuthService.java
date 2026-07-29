@@ -10,6 +10,8 @@ import com.dairy.management.exception.ApiException;
 import com.dairy.management.repository.UserRepository;
 import com.dairy.management.security.JwtUtil;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -25,7 +27,17 @@ import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AuthService {
+
+    /**
+     * DEV-ONLY switch: when true, /api/auth/otp/send includes the OTP in its
+     * response body so local setups without an SMS provider can log in.
+     * Fail-closed: defaults to false and must be enabled explicitly via the
+     * APP_EXPOSE_DEV_OTP environment variable. NEVER enable in production.
+     */
+    @Value("${app.auth.expose-dev-otp:false}")
+    private boolean exposeDevOtp;
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -157,14 +169,28 @@ public class AuthService {
             smsService.sendOtp(phone, code);
             smsSent = true;
         } catch (Exception e) {
-            smsSent = false;
+            // Never log the OTP itself — only the delivery failure.
+            log.warn("OTP SMS delivery failed for login attempt: {}", e.getMessage());
+        }
+
+        if (!smsSent && !exposeDevOtp) {
+            // Fail closed: without SMS delivery and without the dev switch the
+            // user can never learn the OTP — surface a real error instead of
+            // pretending the OTP is on its way.
+            throw new ApiException(
+                    "We could not send the OTP right now. Please try again shortly.",
+                    HttpStatus.SERVICE_UNAVAILABLE);
         }
 
         Map<String, Object> response = new HashMap<>();
         response.put("expiresIn", 300);
         response.put("smsSent", smsSent);
-        response.put("message", smsSent ? "OTP sent to your mobile number" : "OTP ready — check screen");
-        response.put("devOtp", code);
+        response.put("message", smsSent
+                ? "OTP sent to your mobile number"
+                : "Development mode — OTP included in this response");
+        if (exposeDevOtp) {
+            response.put("devOtp", code);
+        }
         return response;
     }
 

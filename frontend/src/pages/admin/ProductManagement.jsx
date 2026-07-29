@@ -11,6 +11,8 @@ import {
   adminUpdateCategory, adminDeleteCategory,
   adminUploadCategoryImage,
 } from '../../api/adminCategoryApi'
+import { classifyError } from '../../utils/apiError'
+import { formatPrice } from '../../utils/productDisplay'
 
 /* ── helpers ─────────────────────────────────────────── */
 const TAG_TYPES = ['success', 'warning', 'error', 'info']
@@ -35,7 +37,7 @@ const BG_PRESETS = [
   'linear-gradient(135deg,#fef2f2,#fecaca)',
 ]
 
-function fmt(price) { return `₹${parseFloat(price).toFixed(2)}` }
+function fmt(price) { return formatPrice(price, { decimals: 2 }) }
 
 /* ── Page ────────────────────────────────────────────── */
 export default function ProductManagement() {
@@ -44,8 +46,12 @@ export default function ProductManagement() {
   /* ── Products state ──────────────────────────────────── */
   const [products,    setProducts]    = useState([])
   const [categories,  setCategories]  = useState([])
-  const [loading,     setLoading]     = useState(true)
-  const [pageError,   setPageError]   = useState('')
+  // Products and categories load independently — a failure in one must never
+  // blank the other, and a failed refresh must never discard already-loaded
+  // data (stale-but-visible beats an empty screen for an admin mid-task).
+  const [productsLoading,  setProductsLoading]  = useState(true)
+  const [productsError,    setProductsError]    = useState(null) // classified error or null
+  const [productsLoaded,   setProductsLoaded]   = useState(false)
   const [filterCat,   setFilterCat]   = useState('all')
   const [filterAvail, setFilterAvail] = useState('all')
   const [search,      setSearch]      = useState('')
@@ -71,7 +77,9 @@ export default function ProductManagement() {
   const [bulkWorking,   setBulkWorking]   = useState(false)
 
   /* ── Categories state ────────────────────────────────── */
-  const [catLoading,  setCatLoading]  = useState(false)
+  const [catLoading,  setCatLoading]  = useState(true)
+  const [catError,    setCatError]    = useState(null)  // classified error or null
+  const [catLoaded,   setCatLoaded]   = useState(false)
   const [catModal,    setCatModal]    = useState(null) // null | 'add' | 'edit'
   const [catForm,     setCatForm]     = useState(EMPTY_CAT)
   const [catFormErr,  setCatFormErr]  = useState({})
@@ -84,19 +92,35 @@ export default function ProductManagement() {
   const [catUploadingId,  setCatUploadingId]  = useState(null)
   const catFileInputRef = useRef(null)
 
-  /* ── load ─────────────────────────────────────────── */
-  const load = useCallback(async () => {
+  /* ── load (independent flows) ─────────────────────── */
+  const loadProducts = useCallback(async () => {
+    setProductsLoading(true); setProductsError(null)
     try {
-      setLoading(true); setPageError('')
-      const [prodRes, catRes] = await Promise.all([adminGetAllProducts(), adminGetCategories()])
-      setProducts(prodRes.data)
-      setCategories(catRes.data)
-    } catch {
-      setPageError('Failed to load products.')
-    } finally { setLoading(false) }
+      const { data } = await adminGetAllProducts()
+      setProducts(Array.isArray(data) ? data : [])
+      setProductsLoaded(true)
+    } catch (err) {
+      // Preserve any previously loaded products; just flag the failure.
+      setProductsError(classifyError(err))
+    } finally {
+      setProductsLoading(false)
+    }
   }, [])
 
-  useEffect(() => { load() }, [load])
+  const loadCategories = useCallback(async () => {
+    setCatLoading(true); setCatError(null)
+    try {
+      const { data } = await adminGetCategories()
+      setCategories(Array.isArray(data) ? data : [])
+      setCatLoaded(true)
+    } catch (err) {
+      setCatError(classifyError(err))
+    } finally {
+      setCatLoading(false)
+    }
+  }, [])
+
+  useEffect(() => { loadProducts(); loadCategories() }, [loadProducts, loadCategories])
 
   /* ── filtered products ─────────────────────────────── */
   const visible = products.filter(p => {
@@ -110,6 +134,11 @@ export default function ProductManagement() {
   const total    = products.length
   const active   = products.filter(p => p.available).length
   const featured = products.filter(p => p.featured).length
+
+  // Show "—" rather than a misleading 0 when the underlying data never loaded.
+  const productsUnknown = productsError && !productsLoaded
+  const catsUnknown     = catError && !catLoaded
+  const stat = (value, unknown) => (unknown ? '—' : value)
 
   /* ── product modal helpers ────────────────────────── */
   const openAdd = () => {
@@ -336,9 +365,9 @@ export default function ProductManagement() {
     try {
       await adminDeleteCategory(c.id)
       setCategories(prev => prev.filter(x => x.id !== c.id))
-      // refresh products (some may have lost their category)
-      const { data } = await adminGetAllProducts()
-      setProducts(data)
+      // refresh products (some may have lost their category); a failed refresh
+      // here shouldn't wipe the table — loadProducts preserves prior data.
+      loadProducts()
     } catch (err) {
       alert(err.response?.data?.message || 'Failed to delete category.')
     } finally { setCatDeletingId(null) }
@@ -355,7 +384,7 @@ export default function ProductManagement() {
             Product Management
           </h1>
           <p style={{ margin: 0, fontSize: 'var(--text-base)', color: 'var(--color-text-muted)' }}>
-            {total} products · {active} active · {featured} featured · {categories.length} categories
+            {stat(total, productsUnknown)} products · {stat(active, productsUnknown)} active · {stat(featured, productsUnknown)} featured · {stat(categories.length, catsUnknown)} categories
           </p>
         </div>
         <button
@@ -376,11 +405,11 @@ export default function ProductManagement() {
       {/* ── Stats ── */}
       <div className="anim-fade-in-up" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(130px,1fr))', gap: 12, marginBottom: 20, animationFillMode: 'both', animationDelay: '50ms' }}>
         {[
-          { label: 'Total Products', value: total,              color: '#7c3aed', bg: '#f5f3ff' },
-          { label: 'Active',         value: active,             color: '#16a34a', bg: '#f0fdf4' },
-          { label: 'Inactive',       value: total - active,     color: '#dc2626', bg: '#fef2f2' },
-          { label: 'Featured',       value: featured,           color: '#d97706', bg: '#fef3c7' },
-          { label: 'Categories',     value: categories.length,  color: '#0891b2', bg: '#ecfeff' },
+          { label: 'Total Products', value: stat(total, productsUnknown),          color: '#7c3aed', bg: '#f5f3ff' },
+          { label: 'Active',         value: stat(active, productsUnknown),         color: '#16a34a', bg: '#f0fdf4' },
+          { label: 'Inactive',       value: stat(total - active, productsUnknown), color: '#dc2626', bg: '#fef2f2' },
+          { label: 'Featured',       value: stat(featured, productsUnknown),       color: '#d97706', bg: '#fef3c7' },
+          { label: 'Categories',     value: stat(categories.length, catsUnknown),  color: '#0891b2', bg: '#ecfeff' },
         ].map(s => (
           <div key={s.label} style={{ background: s.bg, borderRadius: 14, padding: '12px 16px', border: `1.5px solid ${s.bg}` }}>
             <div style={{ fontSize: 22, fontWeight: 900, color: s.color }}>{s.value}</div>
@@ -468,21 +497,36 @@ export default function ProductManagement() {
 
           {/* Table card */}
           <div className="anim-fade-in-up" style={{ background: '#fff', borderRadius: 'var(--radius-xl)', border: '1px solid var(--color-border)', overflow: 'hidden', boxShadow: 'var(--shadow-sm)', animationFillMode: 'both', animationDelay: '120ms' }}>
-            {loading ? (
+            {productsLoading && !productsLoaded ? (
               <div style={{ padding: 64, textAlign: 'center', color: 'var(--color-text-muted)' }}>
                 <div style={{ fontSize: 32, marginBottom: 12 }}>⏳</div>
                 Loading products...
               </div>
-            ) : pageError ? (
+            ) : productsError && !productsLoaded ? (
+              /* Never loaded — full error state (distinct from an empty table). */
               <div style={{ padding: 40, textAlign: 'center', color: 'var(--color-red-600)' }}>
                 <div style={{ fontSize: 32, marginBottom: 8 }}>⚠️</div>
-                {pageError}
-                <button onClick={load} style={{ display: 'block', margin: '12px auto 0', padding: '8px 16px', borderRadius: 8, border: '1px solid #e2e8f0', background: '#fff', cursor: 'pointer', fontSize: 13 }}>
-                  Try Again
-                </button>
+                <div style={{ fontWeight: 700, marginBottom: 4 }}>Couldn't load products</div>
+                <div style={{ fontSize: 13, color: 'var(--color-text-muted)', marginBottom: 12 }}>{productsError.message}</div>
+                {productsError.retryable && (
+                  <button onClick={loadProducts} disabled={productsLoading} style={{ display: 'block', margin: '0 auto', padding: '8px 16px', borderRadius: 8, border: '1px solid #e2e8f0', background: '#fff', cursor: 'pointer', fontSize: 13 }}>
+                    {productsLoading ? 'Retrying…' : '↻ Try Again'}
+                  </button>
+                )}
               </div>
             ) : (
               <>
+                {/* Stale-data banner: prior products still shown, refresh failed. */}
+                {productsError && productsLoaded && (
+                  <div style={{ padding: '9px 20px', background: '#fef2f2', borderBottom: '1px solid #fecaca', display: 'flex', alignItems: 'center', gap: 10, fontSize: 12, color: '#b91c1c' }}>
+                    <span>⚠️ Couldn't refresh — showing last loaded data.</span>
+                    {productsError.retryable && (
+                      <button onClick={loadProducts} disabled={productsLoading} style={{ marginLeft: 'auto', padding: '4px 12px', borderRadius: 20, border: '1px solid #fecaca', background: '#fff', color: '#dc2626', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>
+                        {productsLoading ? 'Retrying…' : '↻ Retry'}
+                      </button>
+                    )}
+                  </div>
+                )}
                 <div style={{ padding: '10px 20px', borderBottom: '1px solid var(--color-border)', background: '#fafafa', fontSize: 'var(--text-sm)', color: 'var(--color-text-muted)', fontWeight: 'var(--font-semibold)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span>{visible.length} product{visible.length !== 1 ? 's' : ''} shown</span>
                   {search && <span style={{ fontSize: 12, color: '#7c3aed' }}>Filtered by: "{search}"</span>}
@@ -662,8 +706,20 @@ export default function ProductManagement() {
       {/* ══════════════════════ CATEGORIES TAB ══════════════════════ */}
       {tab === 'categories' && (
         <div className="anim-fade-in-up" style={{ animationFillMode: 'both' }}>
-          {catLoading ? (
+          {catLoading && !catLoaded ? (
             <div style={{ padding: 64, textAlign: 'center', color: 'var(--color-text-muted)' }}>Loading categories...</div>
+          ) : catError && !catLoaded ? (
+            /* Load failure — NOT "No categories yet". */
+            <div style={{ padding: 64, textAlign: 'center', color: 'var(--color-red-600)' }}>
+              <div style={{ fontSize: 40, marginBottom: 12 }}>⚠️</div>
+              <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 6 }}>Couldn't load categories</div>
+              <p style={{ margin: '0 0 12px', fontSize: 13, color: 'var(--color-text-muted)' }}>{catError.message}</p>
+              {catError.retryable && (
+                <button onClick={loadCategories} disabled={catLoading} style={{ padding: '8px 16px', borderRadius: 8, border: '1px solid #e2e8f0', background: '#fff', cursor: 'pointer', fontSize: 13 }}>
+                  {catLoading ? 'Retrying…' : '↻ Try Again'}
+                </button>
+              )}
+            </div>
           ) : categories.length === 0 ? (
             <div style={{ padding: 64, textAlign: 'center', color: 'var(--color-text-muted)' }}>
               <div style={{ fontSize: 48, marginBottom: 14 }}>🏷️</div>

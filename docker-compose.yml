@@ -30,6 +30,12 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRATION: ${JWT_EXPIRATION}
       FAST2SMS_API_KEY: ${FAST2SMS_API_KEY}
+      # Dev-only OTP disclosure switch — defaults to false (fail closed).
+      APP_EXPOSE_DEV_OTP: ${APP_EXPOSE_DEV_OTP:-false}
+      UPLOAD_DIR: /app/uploads
+    volumes:
+      # Persist uploaded product/category images across container rebuild/restart.
+      - backend_uploads:/app/uploads
     depends_on:
       postgres:
         condition: service_healthy
@@ -46,3 +52,4 @@ services:
 
 volumes:
   pgdata: {}
+  backend_uploads: {}
