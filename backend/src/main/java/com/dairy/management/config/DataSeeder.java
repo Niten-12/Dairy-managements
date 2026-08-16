@@ -8,6 +8,7 @@ import com.dairy.management.repository.ProductRepository;
 import com.dairy.management.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -19,10 +20,22 @@ import java.math.BigDecimal;
 @Slf4j
 public class DataSeeder implements CommandLineRunner {
 
+    /** Password the seeder falls back to when ADMIN_PASSWORD is unset. */
+    private static final String DEFAULT_ADMIN_PASSWORD = "admin123";
+
     private final CategoryRepository categoryRepository;
     private final ProductRepository productRepository;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+
+    // Overridable so a publicly reachable deployment does not ship with the
+    // well-known local credentials. Defaults keep local/docker setups working
+    // exactly as before.
+    @Value("${app.seed.admin-email:admin@dairy.com}")
+    private String adminEmail;
+
+    @Value("${app.seed.admin-password:" + DEFAULT_ADMIN_PASSWORD + "}")
+    private String adminPassword;
 
     @Override
     public void run(String... args) {
@@ -38,16 +51,24 @@ public class DataSeeder implements CommandLineRunner {
 
     @SuppressWarnings("null")
     private void seedAdminUser() {
-        if (userRepository.existsByEmail("admin@dairy.com")) return;
+        if (userRepository.existsByEmail(adminEmail)) return;
 
         userRepository.save(User.builder()
                 .name("Admin")
-                .email("admin@dairy.com")
-                .password(passwordEncoder.encode("admin123"))
+                .email(adminEmail)
+                .password(passwordEncoder.encode(adminPassword))
                 .role("ADMIN")
                 .build());
 
-        log.info("Admin user created — email: admin@dairy.com / password: admin123");
+        if (DEFAULT_ADMIN_PASSWORD.equals(adminPassword)) {
+            // Never print a real password to the logs — only the throwaway default,
+            // which is public knowledge anyway and useful for local onboarding.
+            log.warn("Admin user created with the DEFAULT password — email: {} / password: {}. "
+                    + "Set ADMIN_PASSWORD (and ADMIN_EMAIL) before exposing this backend to the internet.",
+                    adminEmail, DEFAULT_ADMIN_PASSWORD);
+        } else {
+            log.info("Admin user created — email: {} (password from ADMIN_PASSWORD)", adminEmail);
+        }
     }
 
     private void seedCategories() {

@@ -13,6 +13,7 @@ import {
 } from '../../api/adminCategoryApi'
 import { classifyError } from '../../utils/apiError'
 import { formatPrice } from '../../utils/productDisplay'
+import { resolveMediaUrl } from '../../api/mediaUrl'
 
 /* ── helpers ─────────────────────────────────────────── */
 const TAG_TYPES = ['success', 'warning', 'error', 'info']
@@ -608,7 +609,7 @@ export default function ProductManagement() {
                                   overflow: 'hidden', position: 'relative',
                                 }}>
                                   {p.imageUrl
-                                    ? <img src={p.imageUrl} alt={p.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                    ? <img src={resolveMediaUrl(p.imageUrl)} alt={p.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                     : (p.emoji || '📦')
                                   }
                                   {uploadingId === p.id && (
@@ -754,7 +755,7 @@ export default function ProductManagement() {
                         fontSize: 26, position: 'relative',
                       }}>
                         {c.imageUrl
-                          ? <img src={c.imageUrl} alt={c.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          ? <img src={resolveMediaUrl(c.imageUrl)} alt={c.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                           : (c.emoji || '🏷️')
                         }
                         {catUploadingId === c.id && (
@@ -833,7 +834,7 @@ export default function ProductManagement() {
                       fontSize: 36, border: '2px dashed #e2e8f0',
                     }}>
                       {imagePreview
-                        ? <img src={imagePreview} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        ? <img src={resolveMediaUrl(imagePreview)} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         : (form.emoji || '📦')}
                     </div>
                     <div style={{ flex: 1 }}>
@@ -982,7 +983,7 @@ export default function ProductManagement() {
                     display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28,
                   }}>
                     {catImagePreview
-                      ? <img src={catImagePreview} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      ? <img src={resolveMediaUrl(catImagePreview)} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                       : (catForm.emoji || '🏷️')
                     }
                   </div>
@@ -1031,7 +1032,7 @@ export default function ProductManagement() {
                       display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22,
                     }}>
                       {catImagePreview
-                        ? <img src={catImagePreview} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        ? <img src={resolveMediaUrl(catImagePreview)} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         : (catForm.emoji || '🏷️')
                       }
                     </div>

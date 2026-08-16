@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { resolveMediaUrl } from '../../api/mediaUrl'
 
 /**
  * Renders a product/category image with a safe fallback. If the URL is missing,
@@ -9,6 +10,10 @@ import { useState } from 'react'
  * business logic. The onError handler flips to fallback exactly once (guarded
  * by state), so a broken URL can never cause an infinite error loop, and it
  * never touches any state outside this component.
+ *
+ * The backend hands back site-relative "/uploads/..." paths; resolveMediaUrl
+ * turns those into an absolute backend URL when the build has no same-origin
+ * backend (the Capacitor APK), and leaves them alone in the web build.
  */
 function ProductImage({ src, alt = '', fallback = '📦', imgStyle, fallbackStyle }) {
   const [failed, setFailed] = useState(false)
@@ -21,7 +26,7 @@ function ProductImage({ src, alt = '', fallback = '📦', imgStyle, fallbackStyl
 
   return (
     <img
-      src={src}
+      src={resolveMediaUrl(src)}
       alt={alt}
       onError={() => setFailed(true)}
       style={imgStyle}
