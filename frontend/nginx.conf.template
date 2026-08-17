@@ -1,0 +1,63 @@
+# Rendered to /etc/nginx/conf.d/default.conf at container start by the nginx
+# image's envsubst step. Only NGINX_PORT, BACKEND_ORIGIN and NGINX_LOCAL_RESOLVERS
+# are substituted (see NGINX_ENVSUBST_FILTER in the Dockerfile) — nginx's own
+# $uri, $host and friends are left alone.
+
+# Resolver + a variable upstream, rather than a literal host in proxy_pass.
+# nginx resolves a literal upstream once, at startup, and refuses to start if it
+# does not resolve — so on a platform where services boot in any order, a backend
+# that is still starting (or mid-redeploy) would put this container into a
+# crash-loop. Going through a variable defers the lookup to request time and
+# re-checks it every 10s, so the frontend stays up and simply 502s until the
+# backend answers. NGINX_LOCAL_RESOLVERS is exported by the base image from
+# /etc/resolv.conf.
+resolver ${NGINX_LOCAL_RESOLVERS} valid=10s;
+
+server {
+    listen ${NGINX_PORT};
+
+    # proxy_pass with a variable does not inherit the request URI the way a
+    # literal one does, so $request_uri is appended explicitly below.
+    set $upstream ${BACKEND_ORIGIN};
+    root /usr/share/nginx/html;
+    index index.html;
+
+    # Vite emits content-hashed filenames (index-a1b2c3.js), so an asset URL
+    # never changes meaning. Cache it for a year and skip the revalidation.
+    # One header, not `expires` plus `add_header` — those emit two competing
+    # Cache-Control lines, which intermediary caches are free to resolve either way.
+    location /assets/ {
+        add_header Cache-Control "public, max-age=31536000, immutable" always;
+    }
+
+    # index.html is the one file that MUST stay fresh — it is what points at the
+    # current hashed bundles. Cache it and users get pinned to an old release.
+    location = /index.html {
+        add_header Cache-Control "no-cache";
+    }
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    # Proxying the API keeps the site same-origin, so the browser build needs no
+    # absolute URL and the backend needs no CORS entry for the website. Only the
+    # APK, which has no shared origin, relies on CORS.
+    location /api/ {
+        proxy_pass $upstream$request_uri;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # Uploaded product/category images are served by the backend. Cache-Control
+    # comes from Spring (WebMvcConfig) and is passed through untouched.
+    location /uploads/ {
+        proxy_pass $upstream$request_uri;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}

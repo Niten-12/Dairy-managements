@@ -1,0 +1,8 @@
+#!/bin/sh
+# Sourced by the nginx image's entrypoint before it renders the config template
+# (files matching *.envsh are sourced, so exports survive into envsubst).
+#
+# Railway and most PaaS hosts inject the port to bind on as PORT. Plain Docker
+# and docker-compose set nothing, and fall through to 80 — which is what the
+# compose file's "3000:80" mapping expects.
+export NGINX_PORT="${PORT:-${NGINX_PORT:-80}}"
