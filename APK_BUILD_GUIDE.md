@@ -55,7 +55,8 @@ New Volume**, mount path = `/app/uploads`.
 Service → **Settings → Networking → Generate Domain**
 Kuch aisa milega: `https://dairy-backend-production.up.railway.app`
 
-**Test karo:** browser me `https://<tumhara-url>/api/public/products` kholo — JSON aana chahiye.
+**Test karo:** browser me `https://<tumhara-url>/api/products` kholo — products ka JSON aana chahiye.
+(Public endpoints: `/api/products`, `/api/products/featured`, `/api/products/categories`.)
 
 ---
 
